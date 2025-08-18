@@ -10,27 +10,35 @@ import PrayerTracker from "./Components/DasbhoardComponenets/PrayerTracker";
 import CodingTracker from "./Components/DasbhoardComponenets/CodingTracker";
 import WorkoutTracker from "./Components/DasbhoardComponenets/WorkoutTracker";
 import ReadingTracker from "./Components/DasbhoardComponenets/ReadingTracker";
-// import MeditationTracker from "./Components/DasbhoardComponenets/ExpenseTracker";
 import DietTracker from "./Components/DasbhoardComponenets/HealthTracker";
 import MobileTracker from "./Components/DasbhoardComponenets/Mobile";
 import ExpenseTracker from "./Components/DasbhoardComponenets/ExpenseTracker";
 import CreateTask from "./Components/DasbhoardComponenets/CreateTask";
-import TodaysTask from "./Components/DasbhoardComponenets/TodaysTask";
+import { ProtectedRoute } from "./components/ProtectedRoute"; // Adjust path if needed
+import Notes from "./Components/DasbhoardComponenets/Notes";
 
 export default function AppRoutes() {
   return (
     <Routes>
+      {/* Public Routes */}
       <Route path="/" element={<Home />} />
-      <Route path="/Signup" element={<Signup />} />
-      <Route path="/Signin" element={<Signin />} />
+      <Route path="/signin" element={<Signin />} /> {/* Updated to lowercase */}
+      <Route path="/signup" element={<Signup />} /> {/* Updated to lowercase */}
 
-      {/* Dashboard Layout with Sidebar */}
-      <Route path="/dashboard" element={<DashboardLayout />}>
+      {/* Protected Dashboard Route */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<Dashboard />} />
-      <Route path="/dashboard/profile" element={<Profile />} />
+        <Route path="profile" element={<Profile />} />
         <Route path="prayer" element={<PrayerTracker />} />
         <Route path="create-task" element={<CreateTask />} />
-        <Route path="todays-task" element={<TodaysTask />} />
+        <Route path="notes" element={<Notes />} />
         <Route path="coding" element={<CodingTracker />} />
         <Route path="workout" element={<WorkoutTracker />} />
         <Route path="mobile" element={<MobileTracker />} />

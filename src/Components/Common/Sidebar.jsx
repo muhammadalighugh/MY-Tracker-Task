@@ -1,6 +1,10 @@
-import React from "react";
-import { NavLink } from "react-router-dom";
+import React, { useContext } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useSidebar } from "../../context/SidebarContext";
+import { AuthContext } from "../../context/AuthContext";
+import { signOut } from "firebase/auth";
+import { auth } from "../../firebase/firebase.config"; 
+import { toast } from "react-toastify";
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,12 +19,11 @@ import {
   Carrot,
   Smartphone,
   CircleDollarSign,
-  Plus,
-  Calendar
+  ListTodo,
+  NotebookPen
 } from "lucide-react";
 
 const ICON_MAP = {
-  Home,
   HeartHandshake,
   Code,
   Dumbbell,
@@ -28,8 +31,9 @@ const ICON_MAP = {
   CircleDollarSign,
   Carrot,
   Smartphone,
-  Plus,
-  Calendar
+  Home,
+  ListTodo,
+  NotebookPen
 };
 
 const PREDEFINED_TRACKERS = [
@@ -49,7 +53,6 @@ function SidebarLink({ to, iconName, text, collapsed, isActiveTracker, color, is
     return null;
   }
 
-  // Dashboard Link (special styling + exact match)
   if (isDashboard) {
     return (
       <div className="mx-2 my-1">
@@ -57,7 +60,7 @@ function SidebarLink({ to, iconName, text, collapsed, isActiveTracker, color, is
           to={to}
           end
           className={({ isActive }) =>
-            `flex items-center ${collapsed ? 'justify-center px-3 py-3' : 'px-4 py-2.5'} rounded-lg transition-all duration-200 ${
+            `flex items-center ${collapsed ? 'justify-center px-2 py-2' : 'px-3 py-2'} rounded-lg transition-all duration-200 ${
               isActive
                 ? "bg-indigo-500 text-white font-semibold shadow-md border border-indigo-600"
                 : "hover:bg-indigo-50 text-indigo-600"
@@ -67,9 +70,9 @@ function SidebarLink({ to, iconName, text, collapsed, isActiveTracker, color, is
           {({ isActive }) => (
             <>
               <span className={`flex-shrink-0 transition-colors duration-200 ${isActive ? 'text-white' : 'text-indigo-600'}`}>
-                <Icon size={20} />
+                <Icon size={16} />
               </span>
-              {!collapsed && <span className="ml-3">{text}</span>}
+              {!collapsed && <span className="ml-2 text-sm">{text}</span>}
             </>
           )}
         </NavLink>
@@ -77,14 +80,13 @@ function SidebarLink({ to, iconName, text, collapsed, isActiveTracker, color, is
     );
   }
 
-  // Tracker Links
   return (
     <div className="mx-2 my-1">
       {isActiveTracker ? (
         <NavLink
           to={to}
           className={({ isActive }) =>
-            `flex items-center ${collapsed ? 'justify-center px-3 py-3' : 'px-4 py-2.5'} rounded-lg transition-all duration-200 ${
+            `flex items-center ${collapsed ? 'justify-center px-2 py-2' : 'px-3 py-2'} rounded-lg transition-all duration-200 ${
               isActive
                 ? "bg-blue-500 text-white font-semibold shadow-lg border border-blue-600"
                 : "hover:bg-slate-100 text-slate-600"
@@ -94,21 +96,21 @@ function SidebarLink({ to, iconName, text, collapsed, isActiveTracker, color, is
           {({ isActive }) => (
             <>
               <span className={`flex-shrink-0 transition-colors duration-200 ${isActive ? 'text-white' : 'text-slate-600'}`}>
-                <Icon size={20} />
+                <Icon size={16} />
               </span>
-              {!collapsed && <span className="ml-3 font-medium">{text}</span>}
+              {!collapsed && <span className="ml-2 text-sm font-medium">{text}</span>}
             </>
           )}
         </NavLink>
       ) : (
         <div
-          className={`flex items-center ${collapsed ? 'justify-center px-3 py-3' : 'px-4 py-2.5'} rounded-lg text-slate-400 opacity-50 cursor-not-allowed`}
+          className={`flex items-center ${collapsed ? 'justify-center px-2 py-2' : 'px-3 py-2'} rounded-lg text-slate-400 opacity-50 cursor-not-allowed`}
           aria-disabled="true"
         >
           <span className="flex-shrink-0 text-slate-400">
-            <Icon size={20} />
+            <Icon size={16} />
           </span>
-          {!collapsed && <span className="ml-3 font-medium">{text}</span>}
+          {!collapsed && <span className="ml-2 text-sm font-medium">{text}</span>}
         </div>
       )}
     </div>
@@ -117,6 +119,24 @@ function SidebarLink({ to, iconName, text, collapsed, isActiveTracker, color, is
 
 export default function Sidebar() {
   const { sidebarOpen, setSidebarOpen, collapsed, setCollapsed, activeTrackers, trackersExpanded, setTrackersExpanded, customTrackers } = useSidebar();
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  // Extract first name from displayName or fallback to "User" if null
+  const displayName = user?.displayName || "User";
+  const firstName = displayName.split(" ")[0];
+  const avatarLetter = firstName.charAt(0).toUpperCase();
+
+  const handleLogout = () => {
+    signOut(auth)
+      .then(() => {
+        toast.success("Logged out successfully!");
+        navigate("/signin");
+      })
+      .catch((error) => {
+        toast.error(`Logout failed: ${error.message}`);
+      });
+  };
 
   const allTrackers = [...PREDEFINED_TRACKERS, ...customTrackers];
 
@@ -136,44 +156,44 @@ export default function Sidebar() {
         style={{ maxHeight: "100vh", overflowY: "auto" }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-slate-200">
-          {!collapsed && <h1 className="text-xl font-bold text-slate-800">TrackerPro</h1>}
+        <div className="flex items-center justify-between h-14 px-3 border-b border-slate-200">
+          {!collapsed && <h1 className="text-lg font-bold text-slate-800">TrackerPro</h1>}
           <div className="flex items-center">
             <button
               onClick={() => setCollapsed(!collapsed)}
               className="hidden lg:block text-slate-500 hover:text-slate-800"
             >
-              {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+              {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
             </button>
             <button
               onClick={() => setSidebarOpen(false)}
               className="lg:hidden text-slate-500 hover:text-slate-800"
             >
-              <X size={24} />
+              <X size={20} />
             </button>
           </div>
         </div>
 
-        {/* User Info */}
+        {/* User Info with Alphabetic Avatar */}
         <NavLink
           to="/dashboard/profile"
-          className={`flex items-center ${collapsed ? 'justify-center p-4' : 'p-4'} mt-2 rounded-lg hover:bg-slate-50 transition-colors duration-200`}
+          className={`flex items-center ${collapsed ? 'justify-center p-3' : 'p-3'} mt-1 rounded-lg hover:bg-slate-50 transition-colors duration-200`}
         >
-          <img
-            src="https://i.pravatar.cc/40?u=a042581f4e29026704d"
-            alt="User"
-            className="w-10 h-10 rounded-full object-cover"
-          />
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center bg-indigo-500 text-white font-bold text-lg"
+          >
+            {avatarLetter}
+          </div>
           {!collapsed && (
-            <div className="ml-3">
-              <p className="text-sm font-medium text-slate-800">Muhammad Ali</p>
-              <p className="text-xs text-emerald-500 font-semibold">Premium Member</p>
+            <div className="ml-2">
+              <p className="text-xs font-medium text-slate-800">{displayName}</p>
+              <p className="text-[10px] text-emerald-500 font-semibold">Premium Member</p>
             </div>
           )}
         </NavLink>
 
         {/* Main Navigation */}
-        <nav className="mt-4">
+        <nav className="mt-2">
           <SidebarLink
             to="/dashboard"
             iconName="Home"
@@ -185,16 +205,16 @@ export default function Sidebar() {
           />
           <SidebarLink
             to="/dashboard/create-task"
-            iconName="Plus"
-            text="Create Task"
+            iconName="ListTodo"
+            text="Tasks Todo"
             collapsed={collapsed}
             isActiveTracker={true}
             color="#059669"
           />
           <SidebarLink
-            to="/dashboard/todays-task"
-            iconName="Calendar"
-            text="Today's Task"
+            to="/dashboard/Notes"
+            iconName="NotebookPen"
+            text="Notes"
             collapsed={collapsed}
             isActiveTracker={true}
             color="#DC2626"
@@ -202,27 +222,27 @@ export default function Sidebar() {
         </nav>
 
         {/* Tracker Section */}
-        <div className="mt-8">
+        <div className="mt-1">
           <button
             onClick={() => setTrackersExpanded(!trackersExpanded)}
-            className={`flex items-center w-full ${collapsed ? 'justify-center px-2 py-2' : 'justify-between px-4 py-2'} rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-all duration-200`}
+            className={`flex items-center w-full ${collapsed ? 'justify-center px-1 py-2' : 'justify-between px-3 py-2'} bg-green-500 hover:bg-green-600 text-white hover:text-white transition-all duration-200 text-sm`}
           >
             {collapsed ? (
-              trackersExpanded ? <ChevronDown size={20} /> : <ChevronUp size={20} />
+              trackersExpanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />
             ) : (
               <>
-                <span className="font-semibold text-sm tracking-wide text-indigo-600">
+                <span className="font-semibold text-xs tracking-wide text-white">
                   MY TRACKERS
                 </span>
-                {trackersExpanded ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+                {trackersExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
               </>
             )}
           </button>
 
           {trackersExpanded && (
-            <div className="mt-2 space-y-1">
+            <div className="mt-1 space-y-0">
               {allTrackers.length === 0 || activeTrackers.length === 0 ? (
-                <p className="px-2 text-sm text-slate-500">No active trackers</p>
+                <p className="px-2 text-xs text-slate-500">No active trackers</p>
               ) : (
                 allTrackers
                   .filter((t) => activeTrackers.includes(t.id))
@@ -241,6 +261,18 @@ export default function Sidebar() {
             </div>
           )}
         </div>
+
+        {/* Logout Button */}
+        {!collapsed && (
+          <div className="mt-auto p-3">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center py-1 px-3 bg-red-500 hover:bg-red-600 rounded-lg text-white text-sm font-medium transition-colors"
+            >
+              Logout
+            </button>
+          </div>
+        )}
       </div>
     </>
   );

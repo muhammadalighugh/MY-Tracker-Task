@@ -1,21 +1,84 @@
 import { useState } from 'react';
-import { Github, Facebook, Mail, Lock } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import { FaGoogle } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth } from '../../firebase/firebase.config';
 
 export default function Signin() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle signin logic here
+    setLoading(true);
+    
+    if (!formData.email || !formData.password) {
+      toast.error('Please fill in all fields');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      toast.success('Successfully signed in! Redirecting...');
+      navigate('/dashboard');
+    } catch (error) {
+      let errorMessage = 'An error occurred during sign in';
+      
+      switch (error.code) {
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email address';
+          break;
+        case 'auth/user-disabled':
+          errorMessage = 'This account has been disabled';
+          break;
+        case 'auth/user-not-found':
+          errorMessage = 'No account found with this email';
+          break;
+        case 'auth/wrong-password':
+          errorMessage = 'Incorrect password';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many attempts. Account temporarily locked';
+          break;
+        default:
+          errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignin = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      toast.success('Successfully signed in with Google! Redirecting...');
+      navigate('/dashboard');
+    } catch (error) {
+      let errorMessage = 'An error occurred during Google sign in';
+      
+      if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'Sign in popup was closed';
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        errorMessage = 'Sign in cancelled';
+      }
+      
+      toast.error(errorMessage);
+    }
   };
 
   return (
@@ -38,7 +101,7 @@ export default function Signin() {
              style={{ animationDelay: '0s', animationDuration: '4s' }} />
         <div className="absolute top-3/4 right-1/4 w-40 sm:w-56 md:w-72 lg:w-80 h-40 sm:h-56 md:h-72 lg:h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse" 
              style={{ animationDelay: '2s', animationDuration: '6s' }} />
-        <div className="absolute bottom-1/4 left-1/3 w-32 sm:w-48 md:w-56 lg:w-64 h-32 sm:h-48 md:h-56 lg:h-64 bg-purple-500/20 rounded-full blur-3xl animate-pulse" 
+        <div className="absolute bottom-1/4 left-1/3 w-32 sm:w-48 md:w-56 lg:h-64 h-32 sm:h-48 md:h-56 lg:h-64 bg-purple-500/20 rounded-full blur-3xl animate-pulse" 
              style={{ animationDelay: '1s', animationDuration: '5s' }} />
       </div>
 
@@ -46,9 +109,9 @@ export default function Signin() {
       <div className="fixed inset-0 bg-[linear-gradient(rgba(16,185,129,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.03)_1px,transparent_1px)] bg-[size:2rem_2rem] sm:bg-[size:3rem_3rem] lg:bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000,transparent)] pointer-events-none" />
 
       {/* Content with relative positioning */}
-      <div className="relative z-10 flex items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8 ">
-        <div className="w-full max-w-md bg-gray-900/80 backdrop-blur-sm rounded-xl border border-gray-800 p-8 ">
-          <div className="text-center mb-8 ">
+      <div className="relative z-10 flex items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md bg-gray-900/80 backdrop-blur-sm rounded-xl border border-gray-800 p-8">
+          <div className="text-center mb-8">
             <h2 className="text-3xl font-bold">Welcome back</h2>
             <p className="mt-2 text-gray-400">
               Don't have an account?{' '}
@@ -58,19 +121,15 @@ export default function Signin() {
             </p>
           </div>
 
-          {/* Social Login Buttons */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            <button className="flex items-center justify-center py-2 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
+          {/* Social Login Button (Google only) */}
+          <div className="mb-6">
+            <button 
+              onClick={handleGoogleSignin}
+              disabled={loading}
+              className="w-full flex items-center justify-center py-2 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <FaGoogle className="mr-2" size={18} />
-              <span className="sr-only">Google</span>
-            </button>
-            <button className="flex items-center justify-center py-2 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
-              <Github className="mr-2" size={18} />
-              <span className="sr-only">GitHub</span>
-            </button>
-            <button className="flex items-center justify-center py-2 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
-              <Facebook className="mr-2" size={18} />
-              <span className="sr-only">Facebook</span>
+              Google
             </button>
           </div>
 
@@ -99,6 +158,7 @@ export default function Signin() {
                   onChange={handleChange}
                   className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="you@example.com"
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -120,6 +180,7 @@ export default function Signin() {
                   onChange={handleChange}
                   className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="••••••••"
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -131,6 +192,7 @@ export default function Signin() {
                   name="remember-me"
                   type="checkbox"
                   className="h-4 w-4 text-blue-600 bg-gray-800 border-gray-700 rounded focus:ring-blue-500"
+                  disabled={loading}
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-400">
                   Remember me
@@ -146,9 +208,20 @@ export default function Signin() {
 
             <button
               type="submit"
-              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors"
+              disabled={loading}
+              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
             >
-              Sign in
+              {loading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Signing in...
+                </>
+              ) : (
+                'Sign in'
+              )}
             </button>
           </form>
         </div>
