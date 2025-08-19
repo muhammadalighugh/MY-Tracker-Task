@@ -20,6 +20,7 @@ import {
   Smartphone,
   CircleDollarSign,
   ListTodo,
+  IdCardLanyard ,
   NotebookPen
 } from "lucide-react";
 
@@ -33,7 +34,8 @@ const ICON_MAP = {
   Smartphone,
   Home,
   ListTodo,
-  NotebookPen
+  NotebookPen,
+  IdCardLanyard 
 };
 
 const PREDEFINED_TRACKERS = [
@@ -207,6 +209,14 @@ export default function Sidebar() {
             to="/dashboard/create-task"
             iconName="ListTodo"
             text="Tasks Todo"
+            collapsed={collapsed}
+            isActiveTracker={true}
+            color="#059669"
+          />
+          <SidebarLink
+            to="/dashboard/card"
+            iconName="IdCardLanyard"
+            text="Cards"
             collapsed={collapsed}
             isActiveTracker={true}
             color="#059669"

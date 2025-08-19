@@ -14,9 +14,11 @@ import DietTracker from "./Components/DasbhoardComponenets/HealthTracker";
 import MobileTracker from "./Components/DasbhoardComponenets/Mobile";
 import ExpenseTracker from "./Components/DasbhoardComponenets/ExpenseTracker";
 import CreateTask from "./Components/DasbhoardComponenets/CreateTask";
+// import CardMain from "./Components/CardsCreator/card"; 
 import { ProtectedRoute } from "./components/ProtectedRoute"; // Adjust path if needed
 import Notes from "./Components/DasbhoardComponenets/Notes";
-
+import { CardMain, CardView } from './Components/CardsCreator/card';
+import CardPreview from "./Components/CardsCreator/CardPreview";
 export default function AppRoutes() {
   return (
     <Routes>
@@ -24,6 +26,7 @@ export default function AppRoutes() {
       <Route path="/" element={<Home />} />
       <Route path="/signin" element={<Signin />} /> {/* Updated to lowercase */}
       <Route path="/signup" element={<Signup />} /> {/* Updated to lowercase */}
+      <Route path="/dashboard/card/preview" element={<CardPreview />} />
 
       {/* Protected Dashboard Route */}
       <Route
@@ -37,14 +40,16 @@ export default function AppRoutes() {
         <Route index element={<Dashboard />} />
         <Route path="profile" element={<Profile />} />
         <Route path="prayer" element={<PrayerTracker />} />
-        <Route path="create-task" element={<CreateTask />} />
         <Route path="notes" element={<Notes />} />
+        <Route path="create-task" element={<CreateTask />} />
+        <Route path="card" element={<CardMain />} />
         <Route path="coding" element={<CodingTracker />} />
         <Route path="workout" element={<WorkoutTracker />} />
         <Route path="mobile" element={<MobileTracker />} />
         <Route path="reading" element={<ReadingTracker />} />
         <Route path="expense" element={<ExpenseTracker />} />
         <Route path="diet" element={<DietTracker />} />
+        <Route path="/dashboard/card/:shortLink" element={<CardView />} />
       </Route>
     </Routes>
   );
