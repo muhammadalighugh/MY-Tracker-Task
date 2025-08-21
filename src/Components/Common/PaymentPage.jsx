@@ -84,13 +84,13 @@ export default function PaymentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 py-24 sm:py-32">
-      <div className="mx-auto max-w-2xl px-6 lg:px-8">
-        <div className="bg-white/5 rounded-3xl p-8 ring-1 ring-white/10 backdrop-blur-sm">
+    <div className="min-h-screen bg-gray-900 py-16 sm:py-24 lg:py-32 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-2xl">
+        <div className="bg-white/5 rounded-3xl p-6 sm:p-8 lg:p-10 ring-1 ring-white/10 backdrop-blur-sm">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-white">Upgrade to Premium</h2>
-            <p className="mt-2 text-sm text-gray-300">Secure checkout for Premium Membership</p>
-            <p className="mt-2 text-sm text-yellow-400">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white">Upgrade to Premium</h2>
+            <p className="mt-2 text-sm sm:text-base text-gray-300">Secure checkout for Premium Membership</p>
+            <p className="mt-2 text-sm sm:text-base text-yellow-400">
               Note: This payment system is in development. For issues, contact{' '}
               <a href="mailto:info@amigsol.com" className="underline hover:text-yellow-300">
                 info@amigsol.com
@@ -98,9 +98,10 @@ export default function PaymentPage() {
             </p>
           </div>
 
+          {/* Order Summary */}
           <div className="mt-8">
-            <h3 className="text-lg font-semibold text-white">Order Summary</h3>
-            <div className="mt-4 space-y-4 text-sm text-gray-300">
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Order Summary</h3>
+            <div className="mt-4 space-y-4 text-sm sm:text-base text-gray-300">
               <div className="flex justify-between">
                 <span>Premium Plan</span>
                 <span>$8.00/month</span>
@@ -118,8 +119,9 @@ export default function PaymentPage() {
             </div>
           </div>
 
+          {/* Coupon Form */}
           <form onSubmit={handleCoupon} className="mt-8">
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <input
                 type="text"
                 value={coupon}
@@ -129,7 +131,7 @@ export default function PaymentPage() {
               />
               <button
                 type="submit"
-                className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-500"
+                className="rounded-xl bg-indigo-600 px-6 py-3 text-sm sm:text-base font-semibold text-white hover:bg-indigo-500 transition-colors"
               >
                 Apply
               </button>
@@ -137,12 +139,12 @@ export default function PaymentPage() {
             {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
           </form>
 
+          {/* Payment Form */}
           <form onSubmit={handlePayment} className="mt-8 space-y-6">
+            {/* Card Information */}
             <div>
-              <label className="block text-sm font-medium text-gray-300">
-                Card Information
-              </label>
-              <div className="mt-2 flex items-center gap-4">
+              <label className="block text-sm sm:text-base font-medium text-gray-300">Card Information</label>
+              <div className="mt-2 flex flex-col sm:flex-row items-center gap-4">
                 <CreditCard className="h-5 w-5 text-gray-400" />
                 <input
                   type="text"
@@ -167,10 +169,9 @@ export default function PaymentPage() {
               </div>
             </div>
 
+            {/* Billing Information */}
             <div>
-              <label className="block text-sm font-medium text-gray-300">
-                Billing Information
-              </label>
+              <label className="block text-sm sm:text-base font-medium text-gray-300">Billing Information</label>
               <input
                 type="text"
                 placeholder="Full name (disabled)"
@@ -201,13 +202,13 @@ export default function PaymentPage() {
 
             <button
               type="submit"
-              className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 py-3 text-sm font-semibold text-white hover:from-indigo-500 hover:to-purple-500 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 py-3 text-sm sm:text-base font-semibold text-white hover:from-indigo-500 hover:to-purple-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-colors"
             >
               {discount === 8 ? 'Claim 15-Day Free Premium' : 'Pay $' + (8 - discount).toFixed(2)}
             </button>
           </form>
 
-          <div className="mt-6 flex items-center justify-center gap-2 text-sm text-gray-300">
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-2 text-sm sm:text-base text-gray-300">
             <Lock className="h-4 w-4" />
             <span>Secure payment (in development)</span>
           </div>

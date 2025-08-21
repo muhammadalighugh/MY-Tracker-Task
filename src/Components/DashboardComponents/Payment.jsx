@@ -4,7 +4,7 @@ import { AuthContext } from "../../context/AuthContext";
 import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebase.config";
 import { toast } from "react-toastify";
-import { CircleDollarSign, ArrowLeft } from "lucide-react";
+import { CircleDollarSign, ArrowLeft, Check } from "lucide-react";
 
 export default function Payment() {
   const { user } = useContext(AuthContext);
@@ -16,7 +16,6 @@ export default function Payment() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("Payment component mounted, user:", user ? user.uid : "No user");
     if (user) {
       const userDocRef = doc(db, "users", user.uid);
       const unsubscribe = onSnapshot(
@@ -31,7 +30,7 @@ export default function Payment() {
                 isPremium: false,
                 premiumStartDate: null,
                 premiumEndDate: null,
-              }).catch((err) => console.error("Failed to update expiration:", err));
+              }).catch(() => {});
               setIsPremium(false);
               setPremiumEndDate(null);
               setHasUsedCoupon(data.hasUsedCoupon || false);
@@ -42,41 +41,30 @@ export default function Payment() {
               setHasUsedCoupon(data.hasUsedCoupon || false);
               setDisplayName(data.displayName || user.displayName || "User");
             }
-            console.log("User data fetched:", {
-              isPremium: data.isPremium,
-              displayName: data.displayName,
-              premiumEndDate: end ? end.toDate() : null,
-              hasUsedCoupon: data.hasUsedCoupon,
-            });
           } else {
             setIsPremium(false);
             setPremiumEndDate(null);
             setHasUsedCoupon(false);
             setDisplayName(user.displayName || "User");
-            console.log("No user document found, setting defaults");
           }
           setLoading(false);
         },
-        (error) => {
-          console.error("Error fetching user data:", error);
+        () => {
           toast.error("Failed to load user data");
           setLoading(false);
         }
       );
       return () => {
-        console.log("Unsubscribing from Firestore listener");
         unsubscribe();
       };
     } else {
       setLoading(false);
-      console.log("No user logged in, redirecting to signin");
       toast.warn("Please sign in to view your subscription details.");
       navigate("/signin");
     }
   }, [user, navigate]);
 
   const handleUpgrade = () => {
-    console.log("Upgrade button clicked for user:", user?.uid);
     toast.info("Redirecting to payment processing...");
     navigate("/payment");
   };
@@ -86,10 +74,7 @@ export default function Payment() {
       <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
         {/* Back Button */}
         <button
-          onClick={() => {
-            console.log("Navigating back to dashboard");
-            navigate("/dashboard");
-          }}
+          onClick={() => navigate("/dashboard")}
           className="flex items-center text-sm text-slate-600 hover:text-slate-800 mb-4"
         >
           <ArrowLeft size={16} className="mr-2" />
@@ -148,8 +133,8 @@ export default function Payment() {
                     <span className="font-medium text-slate-500">Free Plan</span>.
                   </p>
                   <p className="text-sm text-slate-500 mt-2">
-  The Free Plan includes limited access to trackers. Upgrade to Premium for full access, advanced analytics, and priority support. Contact us at <a href="mailto:info@amigsol.om" className="text-blue-500">info@amigsol.om</a>.
-</p>
+                    The Free Plan includes limited access to trackers. Upgrade to Premium for full access, advanced analytics, and priority support. Contact us at <a href="mailto:info@amigsol.om" className="text-blue-500">info@amigsol.om</a>.
+                  </p>
 
                   {hasUsedCoupon && (
                     <p className="text-sm text-yellow-600 mt-2">
@@ -176,16 +161,16 @@ export default function Payment() {
               <h3 className="text-base font-semibold text-slate-700">Why Go Premium?</h3>
               <ul className="mt-3 space-y-2 text-sm text-slate-600">
                 <li className="flex items-center">
-                  <span className="text-emerald-500 mr-2">✔</span> Full access to all trackers
+                  <Check size={16} className="text-emerald-500 mr-2" /> Full access to all trackers
                 </li>
                 <li className="flex items-center">
-                  <span className="text-emerald-500 mr-2">✔</span> Advanced analytics and insights
+                  <Check size={16} className="text-emerald-500 mr-2" /> Advanced analytics and insights
                 </li>
                 <li className="flex items-center">
-                  <span className="text-emerald-500 mr-2">✔</span> Priority customer support
+                  <Check size={16} className="text-emerald-500 mr-2" /> Priority customer support
                 </li>
                 <li className="flex items-center">
-                  <span className="text-emerald-500 mr-2">✔</span> Exclusive features and updates
+                  <Check size={16} className="text-emerald-500 mr-2" /> Exclusive features and updates
                 </li>
               </ul>
             </div>
