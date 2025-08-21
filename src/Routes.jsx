@@ -4,7 +4,7 @@ import { Route, Routes } from "react-router-dom";
 // Pages
 import Home from "./pages/Home";
 import Profile from "./pages/Profile";
-import Dashboard from "./pages/Dashboard"; // ✅ fixed typo "Dasboard"
+import Dashboard from "./pages/Dashboard"; 
 
 // Common Components
 import Signup from "./Components/Common/Signup";
@@ -35,7 +35,7 @@ import Payment from "./Components/DashboardComponents/Payment";
 import CardMain from "./Components/CardsCreator/Card";
 
 // Not Found
-import NotFoundPage from "./pages/NotFound"; // ✅ fixed typo "NotfFound"
+import NotFoundPage from "./pages/NotFound"; 
 
 export default function AppRoutes() {
   return (
