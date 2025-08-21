@@ -25,9 +25,7 @@ import {
   Archive,
   TrendingUp,
   Target,
-  Activity,
-  Menu,
-  ChevronDown
+  Activity
 } from "lucide-react";
 import { db } from "../../firebase/firebase.config";
 import { 
@@ -150,7 +148,7 @@ const SimpleCalendar = ({ tasks, onDateSelect, selectedDate }) => {
 
     // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-8 sm:h-10"></div>);
+      days.push(<div key={`empty-${i}`} className="h-6 sm:h-8 md:h-10"></div>);
     }
 
     // Days of the month
@@ -165,15 +163,15 @@ const SimpleCalendar = ({ tasks, onDateSelect, selectedDate }) => {
         <div
           key={day}
           onClick={() => onDateSelect(date)}
-          className={`h-8 sm:h-10 flex items-center justify-center cursor-pointer rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 relative
-            ${isToday ? 'bg-indigo-100 text-indigo-700 ring-1 sm:ring-2 ring-indigo-200' : ''}
+          className={`h-6 sm:h-8 md:h-10 flex items-center justify-center cursor-pointer rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 relative
+            ${isToday ? 'bg-indigo-100 text-indigo-700 ring-2 ring-indigo-200' : ''}
             ${isSelected ? 'bg-indigo-600 text-white' : ''}
             ${!isToday && !isSelected ? 'hover:bg-slate-100 text-slate-700' : ''}
           `}
         >
           {day}
           {dayTasks.length > 0 && (
-            <div className={`absolute bottom-1 right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
+            <div className={`absolute bottom-0 right-0 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
               hasOverdue ? 'bg-red-500' : 'bg-indigo-500'
             }`}></div>
           )}
@@ -218,20 +216,20 @@ const SimpleCalendar = ({ tasks, onDateSelect, selectedDate }) => {
         <div className="flex gap-1 sm:gap-2">
           <button
             onClick={() => navigateMonth('prev')}
-            className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-1 sm:p-2 hover:bg-slate-100 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
           </button>
           <button
             onClick={() => navigateMonth('next')}
-            className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-1 sm:p-2 hover:bg-slate-100 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 rotate-180" />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 mb-2">
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1 sm:mb-2">
         {dayNames.map(day => (
           <div key={day} className="h-6 sm:h-8 flex items-center justify-center text-xs font-medium text-slate-500">
             {day}
@@ -239,7 +237,7 @@ const SimpleCalendar = ({ tasks, onDateSelect, selectedDate }) => {
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
         {renderCalendarDays()}
       </div>
     </div>
@@ -520,30 +518,30 @@ const TaskCard = ({ task, onComplete, onEdit, onDelete, showActions = true }) =>
     <div className={`p-3 sm:p-4 rounded-lg border transition-all duration-200 hover:shadow-md ${
       isOverdue ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'
     }`}>
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-3 sm:gap-0">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            {task.emoji && <span className="text-lg flex-shrink-0">{task.emoji}</span>}
-            <h3 className={`font-medium text-slate-900 truncate ${task.completed ? 'line-through text-slate-500' : ''}`}>
+            {task.emoji && <span className="text-base sm:text-lg flex-shrink-0">{task.emoji}</span>}
+            <h3 className={`font-medium text-slate-900 truncate text-sm sm:text-base ${task.completed ? 'line-through text-slate-500' : ''}`}>
               {task.title}
             </h3>
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${priority.bg} ${priority.color} ${priority.border} border`}>
+            <span className={`inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium ${priority.bg} ${priority.color} ${priority.border} border`}>
               {task.priority}
             </span>
             {isOverdue && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+              <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
                 Overdue
               </span>
             )}
           </div>
           
           {task.description && (
-            <p className={`text-sm mb-2 ${task.completed ? 'text-slate-400' : 'text-slate-600'}`}>
+            <p className={`text-xs sm:text-sm mb-2 ${task.completed ? 'text-slate-400' : 'text-slate-600'}`}>
               {task.description.length > 100 ? `${task.description.substring(0, 100)}...` : task.description}
             </p>
           )}
           
-          <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-4 text-xs text-slate-500 flex-wrap">
             {task.dueDate && (
               <span className="flex items-center gap-1">
                 <CalendarDays className="w-3 h-3" />
@@ -553,12 +551,12 @@ const TaskCard = ({ task, onComplete, onEdit, onDelete, showActions = true }) =>
             {task.categories && task.categories.length > 0 && (
               <div className="flex gap-1 flex-wrap">
                 {task.categories.slice(0, 3).map((cat, idx) => (
-                  <span key={idx} className="px-1.5 py-0.5 bg-white rounded-md text-xs border border-slate-200">
+                  <span key={idx} className="px-1.5 sm:px-2 py-0.5 bg-white rounded-md text-xs border border-slate-200">
                     {cat}
                   </span>
                 ))}
                 {task.categories.length > 3 && (
-                  <span className="px-1.5 py-0.5 bg-white rounded-md text-xs border border-slate-200">
+                  <span className="px-1.5 sm:px-2 py-0.5 bg-white rounded-md text-xs border border-slate-200">
                     +{task.categories.length - 3} more
                   </span>
                 )}
@@ -573,7 +571,7 @@ const TaskCard = ({ task, onComplete, onEdit, onDelete, showActions = true }) =>
           </div>
         </div>
         
-        <div className="flex items-center gap-2 ml-4">
+        <div className="flex items-center gap-2 ml-0 sm:ml-4 mt-2 sm:mt-0 w-full sm:w-auto justify-between sm:justify-end">
           <div 
             className="w-3 h-3 rounded-full flex-shrink-0 border border-slate-300" 
             style={{ backgroundColor: task.color }}
@@ -583,21 +581,21 @@ const TaskCard = ({ task, onComplete, onEdit, onDelete, showActions = true }) =>
               <button
                 onClick={handleComplete}
                 disabled={isUpdating}
-                className="p-1.5 text-green-600 hover:bg-green-50 rounded-md transition-colors disabled:opacity-50"
+                className="p-1 text-green-600 hover:bg-green-50 rounded-md transition-colors disabled:opacity-50"
                 title="Mark as complete"
               >
                 <CheckCircle2 className="w-4 h-4" />
               </button>
               <button
                 onClick={() => onEdit?.(task)}
-                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                className="p-1 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                 title="Edit task"
               >
                 <Edit3 className="w-4 h-4" />
               </button>
               <button
                 onClick={() => onDelete?.(task)}
-                className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                className="p-1 text-red-600 hover:bg-red-50 rounded-md transition-colors"
                 title="Delete task"
               >
                 <Trash2 className="w-4 h-4" />
@@ -622,7 +620,6 @@ function CreateTask() {
   const [validationErrors, setValidationErrors] = useState({});
   const [editingTask, setEditingTask] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   
   const [task, setTask] = useState({
     title: "",
@@ -830,7 +827,7 @@ function CreateTask() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-800 mb-4">Authentication Required</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-4">Authentication Required</h2>
           <p className="text-slate-600">Please sign in to access your tasks.</p>
         </div>
       </div>
@@ -838,27 +835,27 @@ function CreateTask() {
   }
 
   const renderTaskForm = () => (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl md:text-2xl font-semibold text-slate-900">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-slate-900">
           {editingTask ? 'Edit Task' : 'Create New Task'}
         </h2>
         {editingTask && (
           <button
             onClick={resetForm}
-            className="text-slate-500 hover:text-slate-700 transition-colors text-sm md:text-base"
+            className="text-slate-500 hover:text-slate-700 transition-colors text-xs sm:text-sm md:text-base"
           >
             Cancel Edit
           </button>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
           {/* Column 1: Basic Info */}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                 Task Title <span className="text-red-500">*</span>
               </label>
               <input
@@ -866,7 +863,7 @@ function CreateTask() {
                 name="title"
                 value={task.title}
                 onChange={handleChange}
-                className={`w-full px-3 md:px-4 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ${
+                className={`w-full px-3 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ${
                   validationErrors.title ? 'border-red-300' : 'border-slate-300'
                 }`}
                 placeholder="Enter task title..."
@@ -879,16 +876,16 @@ function CreateTask() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
+              <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">Description</label>
               <textarea
                 name="description"
                 value={task.description}
                 onChange={handleChange}
-                className={`w-full px-3 md:px-4 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200 ${
+                className={`w-full px-3 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200 ${
                   validationErrors.description ? 'border-red-300' : 'border-slate-200'
                 }`}
                 placeholder="Task description..."
-                rows="4"
+                rows="3 sm:rows-4"
                 maxLength={1000}
               />
               {validationErrors.description && (
@@ -897,26 +894,26 @@ function CreateTask() {
               <p className="text-xs text-slate-500 mt-1">{task.description.length}/1000</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Emoji</label>
+                <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">Emoji</label>
                 <input
                   type="text"
                   name="emoji"
                   value={task.emoji}
                   onChange={handleChange}
-                  className="w-full px-3 md:px-4 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
                   placeholder="🔥"
                   maxLength={2}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Priority</label>
+                <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">Priority</label>
                 <select
                   name="priority"
                   value={task.priority}
                   onChange={handleChange}
-                  className="w-full px-3 md:px-4 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
                 >
                   {PRIORITIES.map((priority) => (
                     <option key={priority.value} value={priority.value}>
@@ -929,10 +926,10 @@ function CreateTask() {
           </div>
 
           {/* Column 2: Schedule & Recurrence */}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {task.recurrence !== "Daily" && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                   {task.recurrence !== "None" ? "Start Date" : "Due Date"}
                 </label>
                 <input
@@ -941,7 +938,7 @@ function CreateTask() {
                   value={task.dueDate}
                   onChange={handleChange}
                   min={new Date().toISOString().split('T')[0]}
-                  className={`w-full px-3 md:px-4 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ${
+                  className={`w-full px-3 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ${
                     validationErrors.dueDate ? 'border-red-300' : 'border-slate-200'
                   }`}
                 />
@@ -952,13 +949,12 @@ function CreateTask() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Recurrence</label>
+              <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">Recurrence</label>
               <select
                 name="recurrence"
                 value={task.recurrence}
                 onChange={handleChange}
-                className="w-full px-3 md:px-4 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
-                style={{ fontSize: '14px' }}
+                className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
               >
                 {RECURRENCES.map((rec) => (
                   <option key={rec} value={rec}>{rec}</option>
@@ -975,7 +971,7 @@ function CreateTask() {
                     name="customInterval"
                     value={task.customInterval}
                     onChange={handleChange}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ${
+                    className={`w-full px-3 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ${
                       validationErrors.customInterval ? 'border-red-300' : 'border-slate-200'
                     }`}
                     min="1"
@@ -991,8 +987,7 @@ function CreateTask() {
                     name="customUnit"
                     value={task.customUnit}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
-                    style={{ fontSize: '14px' }}
+                    className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
                   >
                     {CUSTOM_UNITS.map((unit) => (
                       <option key={unit} value={unit}>
@@ -1005,14 +1000,14 @@ function CreateTask() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Color</label>
-              <div className="flex gap-2 flex-wrap">
+              <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">Color</label>
+              <div className="flex gap-1 sm:gap-2 flex-wrap">
                 {COLORS.map((color) => (
                   <button
                     key={color.value}
                     type="button"
                     onClick={() => setTask(prev => ({ ...prev, color: color.value }))}
-                    className={`w-6 h-6 md:w-8 md:h-8 rounded-lg border-2 transition-all duration-200 hover:scale-105 ${
+                    className={`w-5 h-5 sm:w-6 md:w-8 sm:h-6 md:h-8 rounded-lg border-2 transition-all duration-200 hover:scale-105 ${
                       task.color === color.value 
                         ? 'border-slate-400 scale-110 ring-2 ring-slate-200' 
                         : 'border-slate-200'
@@ -1026,15 +1021,15 @@ function CreateTask() {
           </div>
 
           {/* Column 3: Categories & Notes */}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Categories</label>
+              <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">Categories</label>
               <input
                 type="text"
                 value={categoryInput}
                 onChange={(e) => setCategoryInput(e.target.value)}
                 onKeyPress={handleCategoryAdd}
-                className="w-full px-3 md:px-4 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
                 placeholder="Add category and press Enter..."
                 list="category-suggestions"
               />
@@ -1044,19 +1039,19 @@ function CreateTask() {
                 ))}
               </datalist>
               {task.categories.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
+                <div className="flex flex-wrap gap-1 sm:gap-2 mt-2 sm:mt-3">
                   {task.categories.map((category, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center px-2 md:px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-md border border-indigo-200"
+                      className="inline-flex items-center px-1.5 sm:px-2 md:px-3 py-0.5 sm:py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-md border border-indigo-200"
                     >
                       {category}
                       <button
                         type="button"
                         onClick={() => handleCategoryRemove(category)}
-                        className="ml-2 text-indigo-500 hover:text-indigo-700 transition-colors"
+                        className="ml-1 sm:ml-2 text-indigo-500 hover:text-indigo-700 transition-colors"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                       </button>
                     </span>
                   ))}
@@ -1065,14 +1060,14 @@ function CreateTask() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Notes</label>
+              <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">Notes</label>
               <textarea
                 name="notes"
                 value={task.notes}
                 onChange={handleChange}
-                className="w-full px-3 md:px-4 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200"
+                className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200"
                 placeholder="Additional notes..."
-                rows="5"
+                rows="4 sm:rows-5"
                 maxLength={500}
               />
               <p className="text-xs text-slate-500 mt-1">{task.notes.length}/500</p>
@@ -1081,21 +1076,21 @@ function CreateTask() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row justify-end gap-3 mt-8 pt-6 border-t border-slate-200">
+        <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-slate-200">
           <button
             type="button"
             onClick={resetForm}
-            className="w-full sm:w-auto px-4 md:px-6 py-2.5 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200 transition-colors"
+            className="w-full sm:w-auto px-4 py-2 sm:py-2.5 bg-slate-100 text-slate-700 text-xs sm:text-sm font-medium rounded-lg hover:bg-slate-200 transition-colors"
             disabled={isSubmitting}
           >
             {editingTask ? 'Cancel' : 'Reset'}
           </button>
           <button
             type="submit"
-            className="w-full sm:w-auto px-6 md:px-8 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            className="w-full sm:w-auto px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 bg-indigo-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             disabled={isSubmitting}
           >
-            <Save className="w-4 h-4 mr-2" />
+            <Save className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
             {isSubmitting ? (editingTask ? "Updating..." : "Creating...") : (editingTask ? "Update Task" : "Create Task")}
           </button>
         </div>
@@ -1104,20 +1099,20 @@ function CreateTask() {
   );
 
   const renderTaskList = (taskList, title, emptyMessage, bgColor = "bg-slate-50") => (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-        <div className="flex items-center gap-3">
-          <h2 className="text-lg md:text-xl font-semibold text-slate-900">{title}</h2>
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <h2 className="text-base sm:text-lg md:text-xl font-semibold text-slate-900">{title}</h2>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
             {taskList.length} tasks
           </span>
         </div>
         <button
           onClick={refetchTasks}
-          className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+          className="p-1.5 sm:p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
           title="Refresh tasks"
         >
-          <RefreshCw className="w-4 h-4" />
+          <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
         </button>
       </div>
       
@@ -1137,70 +1132,70 @@ function CreateTask() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FileText className="w-8 h-8 text-slate-400" />
+        <div className="text-center py-8 sm:py-12">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-slate-400" />
           </div>
-          <p className="text-slate-500 text-lg font-medium">{emptyMessage}</p>
-          <p className="text-slate-400 text-sm mt-1">Create your first task to get started!</p>
+          <p className="text-slate-500 text-base sm:text-lg font-medium">{emptyMessage}</p>
+          <p className="text-slate-400 text-xs sm:text-sm mt-1">Create your first task to get started!</p>
         </div>
       )}
     </div>
   );
 
   const renderAnalytics = () => (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-3 sm:p-4 md:p-6 rounded-xl border border-blue-200">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xs md:text-sm font-medium text-blue-800">Today's Tasks</h3>
-              <p className="text-lg md:text-2xl font-bold text-blue-900">{tasks.pending.length}</p>
+              <h3 className="text-xs font-medium text-blue-800">Today's Tasks</h3>
+              <p className="text-lg sm:text-xl md:text-2xl font-bold text-blue-900">{tasks.pending.length}</p>
             </div>
-            <Clock className="w-5 h-5 md:w-8 md:h-8 text-blue-600" />
+            <Clock className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-blue-600" />
           </div>
         </div>
         <div className="bg-gradient-to-r from-red-50 to-red-100 p-3 sm:p-4 md:p-6 rounded-xl border border-red-200">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xs md:text-sm font-medium text-red-800">Overdue</h3>
-              <p className="text-lg md:text-2xl font-bold text-red-900">{tasks.overdue.length}</p>
+              <h3 className="text-xs font-medium text-red-800">Overdue</h3>
+              <p className="text-lg sm:text-xl md:text-2xl font-bold text-red-900">{tasks.overdue.length}</p>
             </div>
-            <AlertCircle className="w-5 h-5 md:w-8 md:h-8 text-red-600" />
+            <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-red-600" />
           </div>
         </div>
         <div className="bg-gradient-to-r from-green-50 to-green-100 p-3 sm:p-4 md:p-6 rounded-xl border border-green-200">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xs md:text-sm font-medium text-green-800">Completed</h3>
-              <p className="text-lg md:text-2xl font-bold text-green-900">{tasks.history.length}</p>
+              <h3 className="text-xs font-medium text-green-800">Completed</h3>
+              <p className="text-lg sm:text-xl md:text-2xl font-bold text-green-900">{tasks.history.length}</p>
             </div>
-            <CheckCircle2 className="w-5 h-5 md:w-8 md:h-8 text-green-600" />
+            <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-green-600" />
           </div>
         </div>
         <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-3 sm:p-4 md:p-6 rounded-xl border border-purple-200">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xs md:text-sm font-medium text-purple-800">Total Tasks</h3>
-              <p className="text-lg md:text-2xl font-bold text-purple-900">{tasks.all.length}</p>
+              <h3 className="text-xs font-medium text-purple-800">Total Tasks</h3>
+              <p className="text-lg sm:text-xl md:text-2xl font-bold text-purple-900">{tasks.all.length}</p>
             </div>
-            <FileText className="w-5 h-5 md:w-8 md:h-8 text-purple-600" />
+            <FileText className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-purple-600" />
           </div>
         </div>
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {/* Daily Completed Tasks */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
-          <h3 className="text-base md:text-lg font-semibold text-slate-800 mb-4">Daily Completed Tasks (Last 7 Days)</h3>
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-3 sm:p-4 md:p-6">
+          <h3 className="text-sm sm:text-base md:text-lg font-semibold text-slate-800 mb-3 sm:mb-4">Daily Completed Tasks (Last 7 Days)</h3>
           <div className="h-[200px] sm:h-[250px] md:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={analyticsData.daily}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="formattedDate" stroke="#64748b" fontSize={12} />
-                <YAxis stroke="#64748b" fontSize={12} />
+                <XAxis dataKey="formattedDate" stroke="#64748b" fontSize={10} sm:fontSize={12} />
+                <YAxis stroke="#64748b" fontSize={10} sm:fontSize={12} />
                 <Tooltip 
                   contentStyle={{ 
                     backgroundColor: '#ffffff', 
@@ -1216,8 +1211,8 @@ function CreateTask() {
         </div>
 
         {/* Priority Distribution */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
-          <h3 className="text-base md:text-lg font-semibold text-slate-800 mb-4">Tasks by Priority</h3>
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-3 sm:p-4 md:p-6">
+          <h3 className="text-sm sm:text-base md:text-lg font-semibold text-slate-800 mb-3 sm:mb-4">Tasks by Priority</h3>
           <div className="h-[200px] sm:h-[250px] md:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -1227,7 +1222,7 @@ function CreateTask() {
                   cy="50%"
                   labelLine={false}
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
+                  outerRadius={60} sm:outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -1244,14 +1239,14 @@ function CreateTask() {
 
       {/* Categories Chart */}
       {analyticsData.categories.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
-          <h3 className="text-base md:text-lg font-semibold text-slate-800 mb-4">Top Categories</h3>
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-3 sm:p-4 md:p-6">
+          <h3 className="text-sm sm:text-base md:text-lg font-semibold text-slate-800 mb-3 sm:mb-4">Top Categories</h3>
           <div className="h-[200px] sm:h-[250px] md:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={analyticsData.categories} layout="horizontal">
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis type="number" stroke="#64748b" fontSize={12} />
-                <YAxis dataKey="name" type="category" stroke="#64748b" fontSize={12} width={80} />
+                <XAxis type="number" stroke="#64748b" fontSize={10} sm:fontSize={12} />
+                <YAxis dataKey="name" type="category" stroke="#64748b" fontSize={10} sm:fontSize={12} width={60} sm:width={80} />
                 <Tooltip 
                   contentStyle={{ 
                     backgroundColor: '#ffffff', 
@@ -1270,15 +1265,15 @@ function CreateTask() {
   );
 
   const renderCalendarView = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
       <SimpleCalendar
         tasks={tasks.all}
         onDateSelect={setSelectedDate}
         selectedDate={selectedDate}
       />
       
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
-        <h3 className="text-base md:text-lg font-semibold text-slate-800 mb-4">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+        <h3 className="text-sm sm:text-base md:text-lg font-semibold text-slate-800 mb-3 sm:mb-4">
           Tasks for {selectedDate.toLocaleDateString()}
         </h3>
         {selectedDateTasks.length > 0 ? (
@@ -1295,9 +1290,9 @@ function CreateTask() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <CalendarDays className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500">No tasks for this date</p>
+          <div className="text-center py-6 sm:py-8">
+            <CalendarDays className="w-10 h-10 sm:w-12 sm:h-12 text-slate-300 mx-auto mb-2 sm:mb-3" />
+            <p className="text-slate-500 text-sm sm:text-base">No tasks for this date</p>
           </div>
         )}
       </div>
@@ -1323,141 +1318,51 @@ function CreateTask() {
     }
   };
 
-  // Mobile Navigation Dropdown
-  const MobileNavDropdown = () => (
-    <div className="lg:hidden bg-white rounded-lg shadow-lg border border-slate-200 p-2 absolute top-full left-0 right-0 z-10 mt-1">
-      <div className="grid grid-cols-2 gap-2">
-        {TABS.slice(3).map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setMobileNavOpen(false);
-              }}
-              className={`flex items-center justify-center gap-2 py-2 px-3 text-xs font-medium rounded-md transition-colors duration-200 ${
-                activeTab === tab.id
-                  ? 'bg-indigo-100 text-indigo-700'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Icon className="w-3 h-3" />
-              <span>{tab.label.split(' ')[0]}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-
   return (
     <div className={`min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 transition-all duration-300 ${
       collapsed ? 'ml-0 lg:ml-16' : 'ml-0 lg:ml-64'
-    } px-3 sm:px-4 py-1 lg:px-8`}>
+    } px-4 py-1 lg:px-8`}>
       <div className="max-w-7xl mx-auto">
         {/* Tab Navigation */}
-        <div className="mb-4 md:mb-2 relative">
-  <div className="border-b border-slate-200 bg-white rounded-t-xl shadow-sm">
-    <nav className="-mb-px flex overflow-x-auto px-3 md:px-6 relative">
-      {/* First 3 tabs always visible on mobile */}
-      {TABS.slice(0, 3).map((tab) => {
-        const Icon = tab.icon;
-        return (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 py-3 md:py-4 px-2 md:px-4 text-xs md:text-sm font-medium border-b-2 transition-colors duration-200 whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'border-indigo-500 text-indigo-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-            }`}
-          >
-            <Icon className="w-4 h-4" />
-            <span className="hidden xs:inline">{tab.label}</span>
-            <span className="xs:hidden">{tab.label.split(' ')[0]}</span>
-            {tab.id === "pending" && tasks.pending.length > 0 && (
-              <span className="ml-1 bg-blue-100 text-blue-600 text-xs font-medium px-1.5 py-0.5 rounded-full">
-                {tasks.pending.length}
-              </span>
-            )}
-            {tab.id === "overdue" && tasks.overdue.length > 0 && (
-              <span className="ml-1 bg-red-100 text-red-600 text-xs font-medium px-1.5 py-0.5 rounded-full">
-                {tasks.overdue.length}
-              </span>
-            )}
-          </button>
-        );
-      })}
-      
-      {/* More button for mobile */}
-      <div className="lg:hidden relative">
-        <button
-          onClick={() => setMobileNavOpen(!mobileNavOpen)}
-          className={`flex items-center gap-1 py-3 md:py-4 px-2 md:px-4 text-xs md:text-sm font-medium border-b-2 transition-colors duration-200 whitespace-nowrap ${
-            mobileNavOpen || TABS.slice(3).some(tab => tab.id === activeTab)
-              ? 'border-indigo-500 text-indigo-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-          }`}
-        >
-          <MoreVertical className="w-4 h-4" />
-          <span className="hidden xs:inline">More</span>
-          <ChevronDown className={`w-3 h-3 transition-transform ${mobileNavOpen ? 'rotate-180' : ''}`} />
-        </button>
-        {mobileNavOpen && (
-          <div className="absolute left-0 right-0 z-50 bg-white rounded-lg shadow-lg border border-slate-200 p-2" style={{ top: 'calc(100% + 2px)' }}>
-            <div className="grid grid-cols-2 gap-2">
-              {TABS.slice(3).map((tab) => {
+        <div className="mb-4 md:mb-2">
+          <div className="border-b border-slate-200 bg-white rounded-t-xl shadow-sm">
+            <nav className="-mb-px grid grid-cols-3 gap-0 sm:flex sm:flex-wrap sm:overflow-x-auto px-2 sm:px-4 md:px-6">
+              {TABS.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      setMobileNavOpen(false);
-                    }}
-                    className={`flex items-center justify-center gap-2 py-2 px-3 text-xs font-medium rounded-md transition-colors duration-200 ${
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 md:py-4 px-1 sm:px-3 md:px-4 text-xs font-medium border-b-2 transition-colors duration-200 whitespace-nowrap ${
                       activeTab === tab.id
-                        ? 'bg-indigo-100 text-indigo-700'
-                        : 'text-slate-600 hover:bg-slate-100'
+                        ? 'border-indigo-500 text-indigo-600'
+                        : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                     }`}
                   >
-                    <Icon className="w-3 h-3" />
-                    <span>{tab.label.split(' ')[0]}</span>
+                    <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                    {tab.id === "pending" && tasks.pending.length > 0 && (
+                      <span className="ml-1 bg-blue-100 text-blue-600 text-xs font-medium px-1 py-0.5 rounded-full">
+                        {tasks.pending.length}
+                      </span>
+                    )}
+                    {tab.id === "overdue" && tasks.overdue.length > 0 && (
+                      <span className="ml-1 bg-red-100 text-red-600 text-xs font-medium px-1 py-0.5 rounded-full">
+                        {tasks.overdue.length}
+                      </span>
+                    )}
                   </button>
                 );
               })}
-            </div>
+            </nav>
           </div>
-        )}
-      </div>
-      
-      {/* Last 3 tabs visible on desktop */}
-      {TABS.slice(3).map((tab) => {
-        const Icon = tab.icon;
-        return (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`hidden lg:flex items-center gap-2 py-3 md:py-4 px-2 md:px-4 text-xs md:text-sm font-medium border-b-2 transition-colors duration-200 whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'border-indigo-500 text-indigo-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-            }`}
-          >
-            <Icon className="w-4 h-4" />
-            <span>{tab.label}</span>
-          </button>
-        );
-      })}
-    </nav>
-  </div>
-</div>
+        </div>
 
-{/* Tab Content */}
-<div className="transition-all duration-300">
-  {renderTabContent()}
-</div>
+        {/* Tab Content */}
+        <div className="transition-all duration-300">
+          {renderTabContent()}
+        </div>
       </div>
     </div>
   );
