@@ -324,40 +324,17 @@ const CodingTracker = () => {
   const activeTech = filteredTech.filter(t => !t.isCompleted);
   const completedTech = filteredTech.filter(t => t.isCompleted);
 
-  return (
-    <div className={`min-h-screen bg-slate-50 transition-all duration-300 ${collapsed ? "lg:ml-20" : "lg:ml-64"}`}>
-      <div className="p-4 md:p-6 lg:p-8">
-        <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 md:mb-8 gap-4">
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Coding Tracker</h1>
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`px-3 py-1.5 md:px-4 md:py-2 text-sm font-semibold rounded-md flex items-center gap-2 transition-colors ${activeTab === 'overview' ? 'bg-indigo-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100 border'}`}
-            >
-              <FaChartBar size={16} /> Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('technologies')}
-              className={`px-3 py-1.5 md:px-4 md:py-2 text-sm font-semibold rounded-md flex items-center gap-2 transition-colors ${activeTab === 'technologies' ? 'bg-indigo-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100 border'}`}
-            >
-              <FaCode size={16} /> Technologies
-            </button>
-            <button
-              onClick={() => setActiveTab('log')}
-              className={`px-3 py-1.5 md:px-4 md:py-2 text-sm font-semibold rounded-md flex items-center gap-2 transition-colors ${activeTab === 'log' ? 'bg-indigo-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100 border'}`}
-            >
-              <FaLaptopCode size={16} /> Log Session
-            </button>
-            <button
-              onClick={() => setActiveTab('analytics')}
-              className={`px-3 py-1.5 md:px-4 md:py-2 text-sm font-semibold rounded-md flex items-center gap-2 transition-colors ${activeTab === 'analytics' ? 'bg-indigo-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100 border'}`}
-            >
-              <FaChartLine size={16} /> Analytics
-            </button>
-          </div>
-        </div>
+  const TABS = [
+    { id: 'overview', label: 'Overview', icon: FaChartBar },
+    { id: 'technologies', label: 'Technologies', icon: FaCode },
+    { id: 'log', label: 'Log Session', icon: FaLaptopCode },
+    { id: 'analytics', label: 'Analytics', icon: FaChartLine },
+  ];
 
-        {activeTab === 'overview' && (
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return (
           <div className="space-y-6 md:space-y-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
               <StatCard
@@ -438,9 +415,9 @@ const CodingTracker = () => {
               </div>
             </InputCard>
           </div>
-        )}
-
-        {activeTab === 'technologies' && (
+        );
+      case 'technologies':
+        return (
           <div className="space-y-6 md:space-y-8">
             <div className="bg-white rounded-xl shadow-sm border border-slate-200">
               <div className="p-4 md:p-6">
@@ -595,9 +572,9 @@ const CodingTracker = () => {
               </div>
             </div>
           </div>
-        )}
-
-        {activeTab === 'log' && (
+        );
+      case 'log':
+        return (
           <div className="space-y-6 md:space-y-8">
             <InputCard icon={FaLaptopCode} title="Log Learning Session" color="#8B5CF6">
               <div className="space-y-4">
@@ -685,9 +662,9 @@ const CodingTracker = () => {
               </div>
             </InputCard>
           </div>
-        )}
-
-        {activeTab === 'analytics' && (
+        );
+      case 'analytics':
+        return (
           <div className="space-y-6 md:space-y-8">
             <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between md:items-center gap-4">
               <h2 className="text-lg md:text-xl font-bold text-slate-800 flex items-center">
@@ -794,7 +771,45 @@ const CodingTracker = () => {
               </div>
             </div>
           </div>
-        )}
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className={`min-h-screen bg-slate-50 transition-all duration-300 ${collapsed ? "lg:ml-20" : "lg:ml-64"}`}>
+      <div className="p-4 md:p-6 lg:p-8">
+        {/* Tab Navigation */}
+        <div className="mb-2 md:mb-2 relative">
+          <div className="border-b border-slate-200 bg-white rounded-t-xl shadow-sm">
+            <nav className="-mb-px flex overflow-x-auto px-3 md:px-6 relative">
+              {TABS.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 py-3 md:py-4 px-2 md:px-4 text-xs md:text-sm font-medium border-b-2 transition-colors duration-200 whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? 'border-indigo-500 text-indigo-600'
+                        : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                    }`}
+                  >
+                    <Icon size={16} />
+                    <span className="hidden xs:inline">{tab.label}</span>
+                    <span className="xs:hidden">{tab.label.split(' ')[0]}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="transition-all duration-300">
+          {renderTabContent()}
+        </div>
 
         {showAddTechModal && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
