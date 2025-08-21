@@ -17,7 +17,7 @@ import CreateTask from "./Components/DasbhoardComponenets/CreateTask";
 // import CardMain from "./Components/CardsCreator/card"; 
 import ProtectedRoute  from "./Components/ProtectedRoute"; 
 import Notes from "./Components/DasbhoardComponenets/Notes";
-import  CardMain from './Components/CardsCreator/card';
+import  CardMain from './Components/CardsCreator/Card';
 // import  CardView from './Components/CardsCreator/card';
 // import CardPreview from "./Components/CardsCreator/CardPreview";
 import VerifyEmail from "./Components/Common/VerifyEmail";
