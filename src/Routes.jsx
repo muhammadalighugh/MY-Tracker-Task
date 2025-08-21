@@ -24,6 +24,7 @@ import VerifyEmail from "./Components/Common/VerifyEmail";
 import ForgotPassword from "./Components/Common/ForgotPassword";
 import PaymentPage from "./Components/Common/PaymentPage";
 import Payment from "./Components/DasbhoardComponenets/Payment";
+import NotFoundPage from "./pages/NotfFound";
 export default function AppRoutes() {
   return (
     <Routes>
@@ -35,6 +36,7 @@ export default function AppRoutes() {
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="payment" element={<PaymentPage />} />
       {/* <Route path="/dashboard/card/preview" element={<CardPreview />} /> */}
+      <Route path="*" element={<NotFoundPage />} />
 
       {/* Protected Dashboard Route */}
       <Route
