@@ -5,7 +5,7 @@ import { auth, db } from "../firebase/firebase.config";
 import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { toast } from "react-toastify";
 
-export function ProtectedRoute({ children }) {
+export default function ProtectedRoute({ children }) {
   const [user, loading, error] = useAuthState(auth);
   const [isPremium, setIsPremium] = useState(null); // null indicates loading
   const location = useLocation();

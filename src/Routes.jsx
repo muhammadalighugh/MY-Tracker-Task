@@ -17,7 +17,7 @@ import PaymentPage from "./Components/Common/PaymentPage";
 import DashboardLayout from "./layouts/DashboardLayout";
 
 // Protected Route
-import { ProtectedRoute } from "./Components/ProtectedRoute";
+import ProtectedRoute  from "./Components/ProtectedRoute";
 
 // Dashboard Components
 import PrayerTracker from "./Components/DashboardComponents/PrayerTracker";
