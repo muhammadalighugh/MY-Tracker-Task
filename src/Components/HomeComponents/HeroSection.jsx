@@ -1,6 +1,6 @@
 import { ArrowRight, Target, TrendingUp, CheckCircle, Calendar, Activity, BarChart3, Zap, Star } from 'lucide-react'
 import { useState, useEffect } from 'react'
-
+import { Link } from "react-router-dom";
 export default function HeroSection() {
   const [isVisible, setIsVisible] = useState(false)
   const [currentTextIndex, setCurrentTextIndex] = useState(0)
@@ -158,12 +158,15 @@ export default function HeroSection() {
           <div className={`flex flex-col sm:flex-row items-start gap-4 sm:gap-6 transition-all duration-1000 delay-700 ${
             isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
           }`}>
-            <button className="group relative rounded-2xl bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-600 p-[2px] transition-all duration-500 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/25 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:ring-offset-2 focus:ring-offset-black w-full sm:w-auto" href="/Signup">
-              <span className="block rounded-2xl bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-600 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white transition-all duration-300 group-hover:from-emerald-400 group-hover:via-blue-400 group-hover:to-purple-500">
-                Start Your Journey Free
-                <ArrowRight className="inline-block ml-2 h-4 w-4 sm:h-5 sm:w-5 transition-transform group-hover:translate-x-1" />
-              </span>
-            </button>
+           <Link
+  to="/signin"
+  className="group relative rounded-2xl bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-600 p-[2px] transition-all duration-500 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/25 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:ring-offset-2 focus:ring-offset-black w-full sm:w-auto"
+>
+  <span className="block rounded-2xl bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-600 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white transition-all duration-300 group-hover:from-emerald-400 group-hover:via-blue-400 group-hover:to-purple-500">
+    Start Your Journey Free
+    <ArrowRight className="inline-block ml-2 h-4 w-4 sm:h-5 sm:w-5 transition-transform group-hover:translate-x-1" />
+  </span>
+</Link>
           </div>
         </div>
 

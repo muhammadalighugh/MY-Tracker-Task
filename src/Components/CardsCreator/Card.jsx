@@ -131,22 +131,22 @@ export default function CardMain() {
 
   return (
     <div
-      className={`transition-all duration-300 ease-in-out ${
-        collapsed ? "ml-20" : "ml-64"
-      } p-6`}
+      className={`transition-all duration-300 ease-in-out p-4 sm:p-6 md:p-8 ${
+        collapsed ? "ml-0 md:ml-20" : "ml-0 md:ml-64"
+      }`}
     >
-      <div className="flex flex-col items-center justify-center h-[80vh] text-center">
-        <Clock size={64} className="text-indigo-500 mb-4" />
-        <h1 className="text-2xl font-bold text-slate-800 mb-2">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] sm:min-h-[70vh] text-center px-4 sm:px-6 lg:px-12">
+        <Clock className="text-indigo-500 mb-4 sm:mb-6" size={40} />
+        <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-slate-800 mb-2 sm:mb-4">
           This Service Coming Soon
         </h1>
-        <p className="text-slate-500 max-w-md mb-4">
+        <p className="text-sm sm:text-base md:text-lg text-slate-500 max-w-xs sm:max-w-md lg:max-w-lg mb-4 sm:mb-6">
           We’re working hard to bring you amazing new features and services. Stay tuned!
         </p>
 
-        <div className="flex items-center gap-2 text-slate-600 text-sm">
-          <Mail size={18} className="text-indigo-500" />
-          <span>
+        <div className="flex flex-col sm:flex-row items-center gap-2 text-slate-600 text-sm sm:text-base">
+          <Mail size={16} className="text-indigo-500" />
+          <span className="text-center sm:text-left">
             For feedback, write to{" "}
             <a
               href="mailto:info@amigsol.com"
@@ -160,4 +160,3 @@ export default function CardMain() {
     </div>
   );
 }
-
