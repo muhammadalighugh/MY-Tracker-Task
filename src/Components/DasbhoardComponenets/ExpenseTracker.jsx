@@ -13,11 +13,42 @@ import {
   Target, 
   Award, 
   HandCoins, 
-  ShoppingBag 
+  ShoppingBag, 
+  AlertTriangle,
+  Bell
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { useNavigate } from 'react-router-dom';
 import { useSidebar } from '../../context/SidebarContext';
+import { auth, db } from '../../firebase/firebase.config';
+import { doc, collection, addDoc, getDocs, deleteDoc, updateDoc, onSnapshot, setDoc } from 'firebase/firestore';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { toast } from 'react-toastify';
+
+// Error Boundary Component
+class ExpenseTrackerErrorBoundary extends React.Component {
+  state = { hasError: false };
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error in ExpenseTracker:', error, errorInfo);
+    toast.error('An error occurred in the Expense Tracker. Please try again.');
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-4 text-center">
+          <h2 className="text-lg font-bold text-red-600">Something went wrong.</h2>
+          <p className="text-sm text-slate-600">Please refresh the page or try again later.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#4F46E5'];
 
@@ -29,24 +60,24 @@ const CURRENCIES = [
 ];
 
 const StatCard = ({ icon: Icon, title, value, subValue, color, currencySymbol }) => (
-  <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between h-full">
+  <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col justify-between h-full">
     <div>
       <div className="flex items-center text-slate-500 mb-2">
         <Icon className="w-5 h-5 mr-2" style={{ color }} />
         <h3 className="font-semibold text-sm">{title}</h3>
       </div>
-      <p className="text-3xl font-bold text-slate-800">{currencySymbol}{value}</p>
+      <p className="text-2xl font-bold text-slate-800">{currencySymbol}{value}</p>
     </div>
     {subValue && <p className="text-sm text-slate-400 mt-1">{subValue}</p>}
   </div>
 );
 
 const InputCard = ({ icon: Icon, title, children, color }) => (
-  <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full">
-    <div className="p-6">
-      <div className="flex items-center mb-5">
-        <Icon className="w-6 h-6 mr-3" style={{ color }} />
-        <h3 className="text-xl font-bold text-slate-800">{title}</h3>
+  <div className="bg-white rounded-lg shadow-sm border border-slate-200 h-full">
+    <div className="p-4">
+      <div className="flex items-center mb-4">
+        <Icon className="w-5 h-5 mr-2" style={{ color }} />
+        <h3 className="text-lg font-bold text-slate-800">{title}</h3>
       </div>
       {children}
     </div>
@@ -57,13 +88,15 @@ const ExpenseTracker = () => {
   const { collapsed } = useSidebar();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [viewPeriod, setViewPeriod] = useState('monthly');
-  const [currency, setCurrency] = useState(() => localStorage.getItem('expense-tracker-currency') || 'USD');
+  const [currency, setCurrency] = useState('USD');
   const [expenses, setExpenses] = useState([]);
   const [incomes, setIncomes] = useState([]);
   const [budgets, setBudgets] = useState({});
   const [debts, setDebts] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [alerts, setAlerts] = useState([]);
+  const [user, loading, error] = useAuthState(auth);
+
   const [newExpense, setNewExpense] = useState({
     category: '',
     amount: '',
@@ -93,157 +126,296 @@ const ExpenseTracker = () => {
     date: new Date().toISOString().split('T')[0],
     status: 'unpaid'
   });
-  const navigate = useNavigate();
 
   const currencySymbol = CURRENCIES.find(c => c.code === currency)?.symbol || '$';
 
+  // Fetch data from Firestore
   useEffect(() => {
-    const savedExpenses = JSON.parse(localStorage.getItem('expense-tracker-expenses') || '[]');
-    const savedIncomes = JSON.parse(localStorage.getItem('expense-tracker-incomes') || '[]');
-    const savedBudgets = JSON.parse(localStorage.getItem('expense-tracker-budgets') || '{}');
-    const savedDebts = JSON.parse(localStorage.getItem('expense-tracker-debts') || '[]');
-    setExpenses(savedExpenses);
-    setIncomes(savedIncomes);
-    setBudgets(savedBudgets);
-    setDebts(savedDebts);
-  }, []);
+    if (!user) return;
 
+    const expensesRef = collection(db, 'users', user.uid, 'expenses');
+    const incomesRef = collection(db, 'users', user.uid, 'incomes');
+    const debtsRef = collection(db, 'users', user.uid, 'debts');
+    const budgetsRef = doc(db, 'users', user.uid, 'budgets', 'userBudgets');
+    const settingsRef = doc(db, 'users', user.uid, 'settings', 'userSettings');
+
+    // Initialize budgets if not exist
+    const initializeBudgets = async () => {
+      try {
+        await setDoc(budgetsRef, {}, { merge: true });
+      } catch (err) {
+        toast.error('Failed to initialize budgets: ' + err.message);
+      }
+    };
+
+    // Initialize settings if not exist
+    const initializeSettings = async () => {
+      try {
+        await setDoc(settingsRef, { currency: 'USD' }, { merge: true });
+      } catch (err) {
+        toast.error('Failed to initialize settings: ' + err.message);
+      }
+    };
+
+    // Fetch expenses
+    const unsubscribeExpenses = onSnapshot(expensesRef, (snapshot) => {
+      const expensesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setExpenses(expensesData);
+    }, (err) => {
+      toast.error('Failed to fetch expenses: ' + err.message);
+    });
+
+    // Fetch incomes
+    const unsubscribeIncomes = onSnapshot(incomesRef, (snapshot) => {
+      const incomesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setIncomes(incomesData);
+    }, (err) => {
+      toast.error('Failed to fetch incomes: ' + err.message);
+    });
+
+    // Fetch debts
+    const unsubscribeDebts = onSnapshot(debtsRef, (snapshot) => {
+      const debtsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setDebts(debtsData);
+    }, (err) => {
+      toast.error('Failed to fetch debts: ' + err.message);
+    });
+
+    // Fetch budgets
+    const unsubscribeBudgets = onSnapshot(budgetsRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setBudgets(docSnap.data());
+      } else {
+        initializeBudgets();
+      }
+    }, (err) => {
+      toast.error('Failed to fetch budgets: ' + err.message);
+    });
+
+    // Fetch settings (currency)
+    const unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setCurrency(docSnap.data().currency || 'USD');
+      } else {
+        initializeSettings();
+      }
+    }, (err) => {
+      toast.error('Failed to fetch settings: ' + err.message);
+    });
+
+    return () => {
+      unsubscribeExpenses();
+      unsubscribeIncomes();
+      unsubscribeDebts();
+      unsubscribeBudgets();
+      unsubscribeSettings();
+    };
+  }, [user]);
+
+  // Generate alerts
   useEffect(() => {
-    localStorage.setItem('expense-tracker-currency', currency);
-  }, [currency]);
-
-  const saveData = (key, data) => {
-    localStorage.setItem(key, JSON.stringify(data));
-  };
-
-  const handleAddExpense = () => {
-    if (!newExpense.category || !newExpense.amount) return;
-
-    const expense = {
-      id: Date.now().toString(),
-      category: newExpense.category,
-      amount: parseFloat(newExpense.amount),
-      description: newExpense.description,
-      date: newExpense.date
-    };
-
-    const updatedExpenses = [...expenses, expense];
-    setExpenses(updatedExpenses);
-    saveData('expense-tracker-expenses', updatedExpenses);
-    setNewExpense({
-      category: '',
-      amount: '',
-      description: '',
-      date: new Date().toISOString().split('T')[0]
+    const newAlerts = [];
+    Object.keys(budgets).forEach(cat => {
+      const spent = expenses.filter(e => e.category === cat).reduce((sum, e) => sum + e.amount, 0);
+      if (spent > budgets[cat]) {
+        newAlerts.push(`Budget exceeded in ${cat} by ${currencySymbol}${(spent - budgets[cat]).toFixed(2)}`);
+      }
     });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-  };
+    const balance = incomes.reduce((sum, i) => sum + i.amount, 0) - expenses.reduce((sum, e) => sum + e.amount, 0);
+    if (balance < 0) {
+      newAlerts.push(`Negative balance: ${currencySymbol}${Math.abs(balance).toFixed(2)}`);
+    }
+    const unpaidDebts = debts.filter(d => d.status === 'unpaid').length;
+    if (unpaidDebts > 0) {
+      newAlerts.push(`${unpaidDebts} unpaid debt${unpaidDebts > 1 ? 's' : ''}`);
+    }
+    setAlerts(newAlerts);
+  }, [expenses, incomes, budgets, debts, currencySymbol]);
 
-  const handleAddGrocery = () => {
-    if (!newGrocery.item || !newGrocery.amount) return;
-
-    const groceryExpense = {
-      id: Date.now().toString(),
-      category: 'Grocery',
-      amount: parseFloat(newGrocery.amount),
-      description: `Grocery: ${newGrocery.item}`,
-      date: newGrocery.date
-    };
-
-    const updatedExpenses = [...expenses, groceryExpense];
-    setExpenses(updatedExpenses);
-    saveData('expense-tracker-expenses', updatedExpenses);
-    setNewGrocery({
-      item: '',
-      amount: '',
-      date: new Date().toISOString().split('T')[0]
-    });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-  };
-
-  const handleAddIncome = () => {
-    if (!newIncome.source || !newIncome.amount) return;
-
-    const income = {
-      id: Date.now().toString(),
-      source: newIncome.source,
-      amount: parseFloat(newIncome.amount),
-      description: newIncome.description,
-      date: newIncome.date
-    };
-
-    const updatedIncomes = [...incomes, income];
-    setIncomes(updatedIncomes);
-    saveData('expense-tracker-incomes', updatedIncomes);
-    setNewIncome({
-      source: '',
-      amount: '',
-      description: '',
-      date: new Date().toISOString().split('T')[0]
-    });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-  };
-
-  const handleAddDebt = () => {
-    if (!newDebt.person || !newDebt.amount) return;
-
-    const debt = {
-      id: Date.now().toString(),
-      person: newDebt.person,
-      amount: parseFloat(newDebt.amount),
-      type: newDebt.type,
-      description: newDebt.description,
-      date: newDebt.date,
-      status: 'unpaid'
-    };
-
-    const updatedDebts = [...debts, debt];
-    setDebts(updatedDebts);
-    saveData('expense-tracker-debts', updatedDebts);
-    setNewDebt({
-      person: '',
-      amount: '',
-      type: 'lent',
-      description: '',
-      date: new Date().toISOString().split('T')[0],
-      status: 'unpaid'
-    });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-  };
-
-  const handleMarkDebtPaid = (id) => {
-    const updatedDebts = debts.map(debt => 
-      debt.id === id ? { ...debt, status: 'paid', datePaid: new Date().toISOString().split('T')[0] } : debt
+  // Handle loading and error states
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+      </div>
     );
-    setDebts(updatedDebts);
-    saveData('expense-tracker-debts', updatedDebts);
+  }
+
+  if (error) {
+    toast.error('Authentication error: ' + error.message);
+    return null;
+  }
+
+  const handleAddExpense = async () => {
+    if (!newExpense.category || !newExpense.amount || !user) return;
+
+    try {
+      const expense = {
+        category: newExpense.category,
+        amount: parseFloat(newExpense.amount),
+        description: newExpense.description,
+        date: newExpense.date,
+        userId: user.uid
+      };
+
+      await addDoc(collection(db, 'users', user.uid, 'expenses'), expense);
+      setNewExpense({
+        category: '',
+        amount: '',
+        description: '',
+        date: new Date().toISOString().split('T')[0]
+      });
+      toast.success('Expense added successfully!');
+    } catch (err) {
+      toast.error('Failed to add expense: ' + err.message);
+    }
   };
 
-  const handleSetBudget = () => {
-    if (!newBudget.category || !newBudget.amount) return;
+  const handleAddGrocery = async () => {
+    if (!newGrocery.item || !newGrocery.amount || !user) return;
 
-    const updatedBudgets = { ...budgets, [newBudget.category]: parseFloat(newBudget.amount) };
-    setBudgets(updatedBudgets);
-    saveData('expense-tracker-budgets', updatedBudgets);
-    setNewBudget({ category: '', amount: '' });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    try {
+      const groceryExpense = {
+        category: 'Grocery',
+        amount: parseFloat(newGrocery.amount),
+        description: `Grocery: ${newGrocery.item}`,
+        date: newGrocery.date,
+        userId: user.uid
+      };
+
+      await addDoc(collection(db, 'users', user.uid, 'expenses'), groceryExpense);
+      setNewGrocery({
+        item: '',
+        amount: '',
+        date: new Date().toISOString().split('T')[0]
+      });
+      toast.success('Grocery expense added successfully!');
+    } catch (err) {
+      toast.error('Failed to add grocery expense: ' + err.message);
+    }
   };
 
-  const handleDeleteData = () => {
-    localStorage.removeItem('expense-tracker-expenses');
-    localStorage.removeItem('expense-tracker-incomes');
-    localStorage.removeItem('expense-tracker-budgets');
-    localStorage.removeItem('expense-tracker-debts');
-    setExpenses([]);
-    setIncomes([]);
-    setBudgets({});
-    setDebts([]);
-    setShowDeleteConfirm(false);
+  const handleAddIncome = async () => {
+    if (!newIncome.source || !newIncome.amount || !user) return;
+
+    try {
+      const income = {
+        source: newIncome.source,
+        amount: parseFloat(newIncome.amount),
+        description: newIncome.description,
+        date: newIncome.date,
+        userId: user.uid
+      };
+
+      await addDoc(collection(db, 'users', user.uid, 'incomes'), income);
+      setNewIncome({
+        source: '',
+        amount: '',
+        description: '',
+        date: new Date().toISOString().split('T')[0]
+      });
+      toast.success('Income added successfully!');
+    } catch (err) {
+      toast.error('Failed to add income: ' + err.message);
+    }
+  };
+
+  const handleAddDebt = async () => {
+    if (!newDebt.person || !newDebt.amount || !user) return;
+
+    try {
+      const debt = {
+        person: newDebt.person,
+        amount: parseFloat(newDebt.amount),
+        type: newDebt.type,
+        description: newDebt.description,
+        date: newDebt.date,
+        status: 'unpaid',
+        userId: user.uid
+      };
+
+      await addDoc(collection(db, 'users', user.uid, 'debts'), debt);
+      setNewDebt({
+        person: '',
+        amount: '',
+        type: 'lent',
+        description: '',
+        date: new Date().toISOString().split('T')[0],
+        status: 'unpaid'
+      });
+      toast.success('Debt added successfully!');
+    } catch (err) {
+      toast.error('Failed to add debt: ' + err.message);
+    }
+  };
+
+  const handleMarkDebtPaid = async (id) => {
+    try {
+      const debtRef = doc(db, 'users', user.uid, 'debts', id);
+      await updateDoc(debtRef, { status: 'paid', datePaid: new Date().toISOString().split('T')[0] });
+      toast.success('Debt marked as paid!');
+    } catch (err) {
+      toast.error('Failed to mark debt as paid: ' + err.message);
+    }
+  };
+
+  const handleSetBudget = async () => {
+    if (!newBudget.category || !newBudget.amount || !user) return;
+
+    try {
+      const budgetsRef = doc(db, 'users', user.uid, 'budgets', 'userBudgets');
+      await updateDoc(budgetsRef, { [newBudget.category]: parseFloat(newBudget.amount) });
+      setNewBudget({ category: '', amount: '' });
+      toast.success('Budget set successfully!');
+    } catch (err) {
+      toast.error('Failed to set budget: ' + err.message);
+    }
+  };
+
+  const handleDeleteData = async () => {
+    if (!user) return;
+
+    try {
+      // Delete expenses
+      const expensesRef = collection(db, 'users', user.uid, 'expenses');
+      const expensesSnapshot = await getDocs(expensesRef);
+      const deleteExpensesPromises = expensesSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deleteExpensesPromises);
+
+      // Delete incomes
+      const incomesRef = collection(db, 'users', user.uid, 'incomes');
+      const incomesSnapshot = await getDocs(incomesRef);
+      const deleteIncomesPromises = incomesSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deleteIncomesPromises);
+
+      // Reset budgets
+      const budgetsRef = doc(db, 'users', user.uid, 'budgets', 'userBudgets');
+      await setDoc(budgetsRef, {});
+
+      // Delete debts
+      const debtsRef = collection(db, 'users', user.uid, 'debts');
+      const debtsSnapshot = await getDocs(debtsRef);
+      const deleteDebtsPromises = debtsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deleteDebtsPromises);
+
+      setShowDeleteConfirm(false);
+      toast.success('All data deleted successfully!');
+    } catch (err) {
+      toast.error('Failed to delete data: ' + err.message);
+    }
+  };
+
+  const handleChangeCurrency = async (newCurrency) => {
+    if (!user) return;
+
+    try {
+      const settingsRef = doc(db, 'users', user.uid, 'settings', 'userSettings');
+      await updateDoc(settingsRef, { currency: newCurrency });
+      setCurrency(newCurrency);
+      toast.success('Currency updated successfully!');
+    } catch (err) {
+      toast.error('Failed to update currency: ' + err.message);
+    }
   };
 
   const getFinanceStats = () => {
@@ -354,47 +526,49 @@ const ExpenseTracker = () => {
   const stats = getFinanceStats();
 
   return (
-    <div className={`min-h-screen bg-slate-50 transition-all duration-300 ${collapsed ? "lg:ml-20" : "lg:ml-64"}`}>
-      <div className="p-6 md:p-8">
-        <div className="flex flex-col md:flex-row justify-between md:items-center mb-8 gap-4">
-          <h1 className="text-3xl font-bold text-slate-900">Expense Tracker</h1>
-          <div className="flex items-center gap-2">
+    <ExpenseTrackerErrorBoundary>
+      <div className={`min-h-screen bg-slate-50 transition-all duration-300 ${collapsed ? 'lg:ml-20' : 'lg:ml-64'} p-4 md:p-6 max-w-7xl mx-auto`}>
+        <div className="flex flex-col gap-4 mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Expense Tracker</h1>
+          <div className="flex flex-wrap gap-3 items-center">
             <select
               className="px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm font-semibold"
               value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
+              onChange={(e) => handleChangeCurrency(e.target.value)}
             >
               {CURRENCIES.map(curr => (
                 <option key={curr.code} value={curr.code}>{curr.code} ({curr.symbol})</option>
               ))}
             </select>
-            <button
-              onClick={() => navigate('/')}
-              className="px-4 py-2 text-sm font-semibold rounded-md flex items-center gap-2 bg-gray-800 text-white hover:bg-gray-900 transition-colors"
-            >
-              <Wallet size={16} />
-              Home
-            </button>
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`px-4 py-2 text-sm font-semibold rounded-md flex items-center gap-2 transition-colors ${activeTab === 'dashboard' ? 'bg-indigo-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100 border'}`}
-            >
-              <Target size={16} />
-              Dashboard
-            </button>
-            <button
-              onClick={() => setActiveTab('analytics')}
-              className={`px-4 py-2 text-sm font-semibold rounded-md flex items-center gap-2 transition-colors ${activeTab === 'analytics' ? 'bg-indigo-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100 border'}`}
-            >
-              <BarChart3 size={16} />
-              Analytics
-            </button>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className={`px-4 py-2 text-sm font-semibold rounded-md flex items-center gap-2 transition-colors ${activeTab === 'dashboard' ? 'bg-indigo-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-300'}`}
+              >
+                <Target size={16} />
+                Dashboard
+              </button>
+              <button
+                onClick={() => setActiveTab('transactions')}
+                className={`px-4 py-2 text-sm font-semibold rounded-md flex items-center gap-2 transition-colors ${activeTab === 'transactions' ? 'bg-indigo-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-300'}`}
+              >
+                <CreditCard size={16} />
+                Transactions
+              </button>
+              <button
+                onClick={() => setActiveTab('analytics')}
+                className={`px-4 py-2 text-sm font-semibold rounded-md flex items-center gap-2 transition-colors ${activeTab === 'analytics' ? 'bg-indigo-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-300'}`}
+              >
+                <BarChart3 size={16} />
+                Analytics
+              </button>
+            </div>
           </div>
         </div>
 
         {activeTab === 'dashboard' && (
-          <div className="space-y-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <StatCard
                 icon={CreditCard}
                 title="Total Expenses"
@@ -427,511 +601,561 @@ const ExpenseTracker = () => {
                 color="#F59E0B"
                 currencySymbol={currencySymbol}
               />
+              <StatCard
+                icon={HandCoins}
+                title="Debt Lent"
+                value={stats.totalDebtLent}
+                subValue="Unpaid"
+                color="#8B5CF6"
+                currencySymbol={currencySymbol}
+              />
+              <StatCard
+                icon={HandCoins}
+                title="Debt Borrowed"
+                value={stats.totalDebtBorrowed}
+                subValue="Unpaid"
+                color="#EF4444"
+                currencySymbol={currencySymbol}
+              />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div>
-                <InputCard icon={ShoppingBag} title="Add Grocery Expense" color="#F59E0B">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <Calendar className="mr-2" size={16} />
-                        Date
-                      </label>
-                      <input
-                        type="date"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newGrocery.date}
-                        onChange={(e) => setNewGrocery({ ...newGrocery, date: e.target.value })}
-                      />
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
+              <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
+                <Bell className="w-5 h-5 mr-2" style={{ color: '#F59E0B' }} />
+                Alerts
+              </h3>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {alerts.length > 0 ? (
+                  alerts.map((alert, index) => (
+                    <div key={index} className="flex items-center p-3 bg-yellow-50 rounded-md text-yellow-700 text-sm">
+                      <AlertTriangle className="mr-2 w-4 h-4" />
+                      {alert}
                     </div>
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <ShoppingBag className="mr-2" size={16} />
-                        Item
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newGrocery.item}
-                        onChange={(e) => setNewGrocery({ ...newGrocery, item: e.target.value })}
-                        placeholder="e.g., Milk, Bread"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <DollarSign className="mr-2" size={16} />
-                        Amount
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newGrocery.amount}
-                        onChange={(e) => setNewGrocery({ ...newGrocery, amount: e.target.value })}
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <button
-                      className="w-full flex items-center justify-center px-4 py-2.5 bg-yellow-600 text-white font-semibold rounded-md shadow hover:bg-yellow-700 transition-colors disabled:bg-yellow-400 disabled:cursor-not-allowed"
-                      onClick={handleAddGrocery}
-                      disabled={!newGrocery.item || !newGrocery.amount}
-                    >
-                      <Plus className="mr-2" size={16} />
-                      Add Grocery
-                    </button>
-                  </div>
-                </InputCard>
-              </div>
-              <div>
-                <InputCard icon={CreditCard} title="Add General Expense" color="#EF4444">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <Calendar className="mr-2" size={16} />
-                        Date
-                      </label>
-                      <input
-                        type="date"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newExpense.date}
-                        onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <PieIcon className="mr-2" size={16} />
-                        Category
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newExpense.category}
-                        onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
-                        placeholder="e.g., Food, Transport"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <DollarSign className="mr-2" size={16} />
-                        Amount
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newExpense.amount}
-                        onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <TrendingUp className="mr-2" size={16} />
-                        Description
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newExpense.description}
-                        onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
-                        placeholder="Optional description"
-                      />
-                    </div>
-                    <button
-                      className="w-full flex items-center justify-center px-4 py-2.5 bg-red-600 text-white font-semibold rounded-md shadow hover:bg-red-700 transition-colors disabled:bg-red-400 disabled:cursor-not-allowed"
-                      onClick={handleAddExpense}
-                      disabled={!newExpense.category || !newExpense.amount}
-                    >
-                      <Plus className="mr-2" size={16} />
-                      Add Expense
-                    </button>
-                  </div>
-                </InputCard>
-              </div>
-              <div>
-                <InputCard icon={DollarSign} title="Add Income" color="#10B981">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <Calendar className="mr-2" size={16} />
-                        Date
-                      </label>
-                      <input
-                        type="date"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newIncome.date}
-                        onChange={(e) => setNewIncome({ ...newIncome, date: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <Award className="mr-2" size={16} />
-                        Source
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newIncome.source}
-                        onChange={(e) => setNewIncome({ ...newIncome, source: e.target.value })}
-                        placeholder="e.g., Salary, Freelance"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <DollarSign className="mr-2" size={16} />
-                        Amount
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newIncome.amount}
-                        onChange={(e) => setNewIncome({ ...newIncome, amount: e.target.value })}
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <TrendingUp className="mr-2" size={16} />
-                        Description
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newIncome.description}
-                        onChange={(e) => setNewIncome({ ...newIncome, description: e.target.value })}
-                        placeholder="Optional description"
-                      />
-                    </div>
-                    <button
-                      className="w-full flex items-center justify-center px-4 py-2.5 bg-green-600 text-white font-semibold rounded-md shadow hover:bg-green-700 transition-colors disabled:bg-green-400 disabled:cursor-not-allowed"
-                      onClick={handleAddIncome}
-                      disabled={!newIncome.source || !newIncome.amount}
-                    >
-                      <Plus className="mr-2" size={16} />
-                      Add Income
-                    </button>
-                  </div>
-                </InputCard>
-              </div>
-              <div>
-                <InputCard icon={HandCoins} title="Add Debt" color="#8B5CF6">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <Calendar className="mr-2" size={16} />
-                        Date
-                      </label>
-                      <input
-                        type="date"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newDebt.date}
-                        onChange={(e) => setNewDebt({ ...newDebt, date: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <HandCoins className="mr-2" size={16} />
-                        Person/Entity
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newDebt.person}
-                        onChange={(e) => setNewDebt({ ...newDebt, person: e.target.value })}
-                        placeholder="e.g., John Doe, Bank"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <DollarSign className="mr-2" size={16} />
-                        Amount
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newDebt.amount}
-                        onChange={(e) => setNewDebt({ ...newDebt, amount: e.target.value })}
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <TrendingUp className="mr-2" size={16} />
-                        Type
-                      </label>
-                      <select
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newDebt.type}
-                        onChange={(e) => setNewDebt({ ...newDebt, type: e.target.value })}
-                      >
-                        <option value="lent">Lent</option>
-                        <option value="borrowed">Borrowed</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <TrendingUp className="mr-2" size={16} />
-                        Description
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newDebt.description}
-                        onChange={(e) => setNewDebt({ ...newDebt, description: e.target.value })}
-                        placeholder="Optional description"
-                      />
-                    </div>
-                    <button
-                      className="w-full flex items-center justify-center px-4 py-2.5 bg-purple-600 text-white font-semibold rounded-md shadow hover:bg-purple-700 transition-colors disabled:bg-purple-400 disabled:cursor-not-allowed"
-                      onClick={handleAddDebt}
-                      disabled={!newDebt.person || !newDebt.amount}
-                    >
-                      <Plus className="mr-2" size={16} />
-                      Add Debt
-                    </button>
-                  </div>
-                </InputCard>
-              </div>
-              <div>
-                <InputCard icon={Target} title="Set Budget" color="#3B82F6">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <PieIcon className="mr-2" size={16} />
-                        Category
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newBudget.category}
-                        onChange={(e) => setNewBudget({ ...newBudget, category: e.target.value })}
-                        placeholder="e.g., Food, Transport"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
-                        <DollarSign className="mr-2" size={16} />
-                        Amount
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
-                        value={newBudget.amount}
-                        onChange={(e) => setNewBudget({ ...newBudget, amount: e.target.value })}
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <button
-                      className="w-full flex items-center justify-center px-4 py-2.5 bg-indigo-600 text-white font-semibold rounded-md shadow hover:bg-indigo-700 transition-colors disabled:bg-indigo-400 disabled:cursor-not-allowed"
-                      onClick={handleSetBudget}
-                      disabled={!newBudget.category || !newBudget.amount}
-                    >
-                      <Plus className="mr-2" size={16} />
-                      Set Budget
-                    </button>
-                    {saved && (
-                      <div className="flex items-center p-3 bg-emerald-50 text-emerald-700 rounded-md text-sm">
-                        <CheckCircle size={16} className="mr-2" />
-                        Successfully saved!
-                      </div>
-                    )}
-                    <button
-                      className="w-full flex items-center justify-center px-4 py-2 border border-red-300 text-red-600 font-semibold rounded-md hover:bg-red-50 hover:border-red-500 transition-colors"
-                      onClick={() => setShowDeleteConfirm(true)}
-                    >
-                      <Trash2 className="mr-2" size={16} />
-                      Delete All Data
-                    </button>
-                  </div>
-                </InputCard>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-slate-800 mb-5 flex items-center">
-                  <ShoppingBag className="w-6 h-6 mr-3" style={{ color: '#F59E0B' }} />
-                  Recent Grocery Expenses
-                </h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead className="bg-slate-50 text-sm text-slate-600">
-                      <tr>
-                        <th className="p-3 font-semibold">Date</th>
-                        <th className="p-3 font-semibold">Item</th>
-                        <th className="p-3 font-semibold">Amount</th>
-                        <th className="p-3 font-semibold">Description</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {expenses.filter(e => e.category === 'Grocery').slice(0, 5).map(expense => (
-                        <tr key={expense.id} className="border-t border-slate-200">
-                          <td className="p-3">{expense.date}</td>
-                          <td className="p-3 font-medium text-slate-800">{expense.description.replace('Grocery: ', '')}</td>
-                          <td className="p-3">{currencySymbol}{expense.amount.toFixed(2)}</td>
-                          <td className="p-3">{expense.description || '-'}</td>
-                        </tr>
-                      ))}
-                      {expenses.filter(e => e.category === 'Grocery').length === 0 && (
-                        <tr>
-                          <td colSpan="4" className="p-4 text-center text-slate-600">
-                            No grocery expenses logged. Add your first grocery expense to get started!
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-slate-800 mb-5 flex items-center">
-                  <CreditCard className="w-6 h-6 mr-3" style={{ color: '#EF4444' }} />
-                  Recent General Expenses
-                </h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead className="bg-slate-50 text-sm text-slate-600">
-                      <tr>
-                        <th className="p-3 font-semibold">Date</th>
-                        <th className="p-3 font-semibold">Category</th>
-                        <th className="p-3 font-semibold">Amount</th>
-                        <th className="p-3 font-semibold">Description</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {expenses.filter(e => e.category !== 'Grocery').slice(0, 5).map(expense => (
-                        <tr key={expense.id} className="border-t border-slate-200">
-                          <td className="p-3">{expense.date}</td>
-                          <td className="p-3 font-medium text-slate-800">{expense.category}</td>
-                          <td className="p-3">{currencySymbol}{expense.amount.toFixed(2)}</td>
-                          <td className="p-3">{expense.description || '-'}</td>
-                        </tr>
-                      ))}
-                      {expenses.filter(e => e.category !== 'Grocery').length === 0 && (
-                        <tr>
-                          <td colSpan="4" className="p-4 text-center text-slate-600">
-                            No general expenses logged. Add your first expense to get started!
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-slate-800 mb-5 flex items-center">
-                  <DollarSign className="w-6 h-6 mr-3" style={{ color: '#10B981' }} />
-                  Recent Incomes
-                </h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead className="bg-slate-50 text-sm text-slate-600">
-                      <tr>
-                        <th className="p-3 font-semibold">Date</th>
-                        <th className="p-3 font-semibold">Source</th>
-                        <th className="p-3 font-semibold">Amount</th>
-                        <th className="p-3 font-semibold">Description</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {incomes.slice(0, 5).map(income => (
-                        <tr key={income.id} className="border-t border-slate-200">
-                          <td className="p-3">{income.date}</td>
-                          <td className="p-3 font-medium text-slate-800">{income.source}</td>
-                          <td className="p-3">{currencySymbol}{income.amount.toFixed(2)}</td>
-                          <td className="p-3">{income.description || '-'}</td>
-                        </tr>
-                      ))}
-                      {incomes.length === 0 && (
-                        <tr>
-                          <td colSpan="4" className="p-4 text-center text-slate-600">
-                            No incomes logged. Add your first income to get started!
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-slate-800 mb-5 flex items-center">
-                  <HandCoins className="w-6 h-6 mr-3" style={{ color: '#8B5CF6' }} />
-                  Debt Summary
-                </h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead className="bg-slate-50 text-sm text-slate-600">
-                      <tr>
-                        <th className="p-3 font-semibold">Date</th>
-                        <th className="p-3 font-semibold">Person/Entity</th>
-                        <th className="p-3 font-semibold">Type</th>
-                        <th className="p-3 font-semibold">Amount</th>
-                        <th className="p-3 font-semibold">Status</th>
-                        <th className="p-3 font-semibold">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {debts.slice(0, 5).map(debt => (
-                        <tr key={debt.id} className="border-t border-slate-200">
-                          <td className="p-3">{debt.date}</td>
-                          <td className="p-3 font-medium text-slate-800">{debt.person}</td>
-                          <td className="p-3">{debt.type.charAt(0).toUpperCase() + debt.type.slice(1)}</td>
-                          <td className="p-3">{currencySymbol}{debt.amount.toFixed(2)}</td>
-                          <td className="p-3">
-                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${debt.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                              {debt.status.charAt(0).toUpperCase() + debt.status.slice(1)}
-                            </span>
-                          </td>
-                          <td className="p-3">
-                            {debt.status === 'unpaid' && (
-                              <button
-                                onClick={() => handleMarkDebtPaid(debt.id)}
-                                className="px-3 py-1 bg-green-600 text-white rounded-md text-sm font-semibold hover:bg-green-700 transition-colors"
-                              >
-                                Mark Paid
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                      {debts.length === 0 && (
-                        <tr>
-                          <td colSpan="6" className="p-4 text-center text-slate-600">
-                            No debts logged. Add your first debt to get started!
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-600 text-center">No alerts at the moment.</p>
+                )}
               </div>
             </div>
           </div>
         )}
 
+{activeTab === 'transactions' && (
+  <div className="space-y-6">
+    {/* Input Cards Grid */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Grocery Expense Card */}
+      <InputCard icon={ShoppingBag} title="Add Grocery Expense" color="#F59E0B">
+        <div className="space-y-4">
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <Calendar className="mr-2 w-4 h-4" />
+              Date
+            </label>
+            <input
+              type="date"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newGrocery.date}
+              onChange={(e) => setNewGrocery({ ...newGrocery, date: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <ShoppingBag className="mr-2 w-4 h-4" />
+              Item
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newGrocery.item}
+              onChange={(e) => setNewGrocery({ ...newGrocery, item: e.target.value })}
+              placeholder="e.g., Milk, Bread"
+            />
+          </div>
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <DollarSign className="mr-2 w-4 h-4" />
+              Amount
+            </label>
+            <input
+              type="number"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newGrocery.amount}
+              onChange={(e) => setNewGrocery({ ...newGrocery, amount: e.target.value })}
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+            />
+          </div>
+          <button
+            className="w-full flex items-center justify-center px-4 py-2 bg-yellow-600 text-white font-semibold rounded-md shadow hover:bg-yellow-700 transition-colors disabled:bg-yellow-400 disabled:cursor-not-allowed text-sm"
+            onClick={handleAddGrocery}
+            disabled={!newGrocery.item || !newGrocery.amount}
+          >
+            <Plus className="mr-2 w-4 h-4" />
+            Add Grocery
+          </button>
+        </div>
+      </InputCard>
+
+      {/* General Expense Card */}
+      <InputCard icon={CreditCard} title="Add General Expense" color="#EF4444">
+        <div className="space-y-4">
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <Calendar className="mr-2 w-4 h-4" />
+              Date
+            </label>
+            <input
+              type="date"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newExpense.date}
+              onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <PieIcon className="mr-2 w-4 h-4" />
+              Category
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newExpense.category}
+              onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
+              placeholder="e.g., Food, Transport"
+            />
+          </div>
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <DollarSign className="mr-2 w-4 h-4" />
+              Amount
+            </label>
+            <input
+              type="number"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newExpense.amount}
+              onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+            />
+          </div>
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <TrendingUp className="mr-2 w-4 h-4" />
+              Description
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newExpense.description}
+              onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
+              placeholder="Optional description"
+            />
+          </div>
+          <button
+            className="w-full flex items-center justify-center px-4 py-2 bg-red-600 text-white font-semibold rounded-md shadow hover:bg-red-700 transition-colors disabled:bg-red-400 disabled:cursor-not-allowed text-sm"
+            onClick={handleAddExpense}
+            disabled={!newExpense.category || !newExpense.amount}
+          >
+            <Plus className="mr-2 w-4 h-4" />
+            Add Expense
+          </button>
+        </div>
+      </InputCard>
+
+      {/* Income Card */}
+      <InputCard icon={DollarSign} title="Add Income" color="#10B981">
+        <div className="space-y-4">
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <Calendar className="mr-2 w-4 h-4" />
+              Date
+            </label>
+            <input
+              type="date"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newIncome.date}
+              onChange={(e) => setNewIncome({ ...newIncome, date: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <Award className="mr-2 w-4 h-4" />
+              Source
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newIncome.source}
+              onChange={(e) => setNewIncome({ ...newIncome, source: e.target.value })}
+              placeholder="e.g., Salary, Freelance"
+            />
+          </div>
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <DollarSign className="mr-2 w-4 h-4" />
+              Amount
+            </label>
+            <input
+              type="number"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newIncome.amount}
+              onChange={(e) => setNewIncome({ ...newIncome, amount: e.target.value })}
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+            />
+          </div>
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <TrendingUp className="mr-2 w-4 h-4" />
+              Description
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newIncome.description}
+              onChange={(e) => setNewIncome({ ...newIncome, description: e.target.value })}
+              placeholder="Optional description"
+            />
+          </div>
+          <button
+            className="w-full flex items-center justify-center px-4 py-2 bg-green-600 text-white font-semibold rounded-md shadow hover:bg-green-700 transition-colors disabled:bg-green-400 disabled:cursor-not-allowed text-sm"
+            onClick={handleAddIncome}
+            disabled={!newIncome.source || !newIncome.amount}
+          >
+            <Plus className="mr-2 w-4 h-4" />
+            Add Income
+          </button>
+        </div>
+      </InputCard>
+
+      {/* Debt Card */}
+      <InputCard icon={HandCoins} title="Add Debt" color="#8B5CF6">
+        <div className="space-y-4">
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <Calendar className="mr-2 w-4 h-4" />
+              Date
+            </label>
+            <input
+              type="date"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newDebt.date}
+              onChange={(e) => setNewDebt({ ...newDebt, date: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <HandCoins className="mr-2 w-4 h-4" />
+              Person/Entity
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newDebt.person}
+              onChange={(e) => setNewDebt({ ...newDebt, person: e.target.value })}
+              placeholder="e.g., John Doe, Bank"
+            />
+          </div>
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <DollarSign className="mr-2 w-4 h-4" />
+              Amount
+            </label>
+            <input
+              type="number"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newDebt.amount}
+              onChange={(e) => setNewDebt({ ...newDebt, amount: e.target.value })}
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+            />
+          </div>
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <TrendingUp className="mr-2 w-4 h-4" />
+              Type
+            </label>
+            <select
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newDebt.type}
+              onChange={(e) => setNewDebt({ ...newDebt, type: e.target.value })}
+            >
+              <option value="lent">Lent</option>
+              <option value="borrowed">Borrowed</option>
+            </select>
+          </div>
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <TrendingUp className="mr-2 w-4 h-4" />
+              Description
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newDebt.description}
+              onChange={(e) => setNewDebt({ ...newDebt, description: e.target.value })}
+              placeholder="Optional description"
+            />
+          </div>
+          <button
+            className="w-full flex items-center justify-center px-4 py-2 bg-purple-600 text-white font-semibold rounded-md shadow hover:bg-purple-700 transition-colors disabled:bg-purple-400 disabled:cursor-not-allowed text-sm"
+            onClick={handleAddDebt}
+            disabled={!newDebt.person || !newDebt.amount}
+          >
+            <Plus className="mr-2 w-4 h-4" />
+            Add Debt
+          </button>
+        </div>
+      </InputCard>
+
+      {/* Budget Card */}
+      <InputCard icon={Target} title="Set Budget" color="#3B82F6">
+        <div className="space-y-4">
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <PieIcon className="mr-2 w-4 h-4" />
+              Category
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newBudget.category}
+              onChange={(e) => setNewBudget({ ...newBudget, category: e.target.value })}
+              placeholder="e.g., Food, Transport"
+            />
+          </div>
+          <div>
+            <label className="flex items-center text-sm font-medium text-slate-700 mb-1">
+              <DollarSign className="mr-2 w-4 h-4" />
+              Amount
+            </label>
+            <input
+              type="number"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={newBudget.amount}
+              onChange={(e) => setNewBudget({ ...newBudget, amount: e.target.value })}
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+            />
+          </div>
+          <button
+            className="w-full flex items-center justify-center px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow hover:bg-indigo-700 transition-colors disabled:bg-indigo-400 disabled:cursor-not-allowed text-sm"
+            onClick={handleSetBudget}
+            disabled={!newBudget.category || !newBudget.amount}
+          >
+            <Plus className="mr-2 w-4 h-4" />
+            Set Budget
+          </button>
+          <button
+            className="w-full flex items-center justify-center px-4 py-2 border border-red-300 text-red-600 font-semibold rounded-md hover:bg-red-50 hover:border-red-500 transition-colors text-sm"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            <Trash2 className="mr-2 w-4 h-4" />
+            Delete All Data
+          </button>
+        </div>
+      </InputCard>
+    </div>
+
+    {/* Grocery Expenses Table */}
+    <div className="bg-white rounded-lg shadow-sm border border-slate-200">
+      <div className="p-4">
+        <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
+          <ShoppingBag className="w-5 h-5 mr-2" style={{ color: '#F59E0B' }} />
+          Recent Grocery Expenses
+        </h3>
+        <div className="overflow-x-auto">
+          <div className="min-w-[600px]">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 text-slate-600">
+                <tr>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Date</th>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Item</th>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Amount</th>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {expenses.filter(e => e.category === 'Grocery').slice(0, 5).map(expense => (
+                  <tr key={expense.id} className="border-t border-slate-200">
+                    <td className="p-2 md:p-3 whitespace-nowrap">{expense.date}</td>
+                    <td className="p-2 md:p-3 font-medium text-slate-800 whitespace-nowrap">{expense.description.replace('Grocery: ', '')}</td>
+                    <td className="p-2 md:p-3 whitespace-nowrap">{currencySymbol}{expense.amount.toFixed(2)}</td>
+                    <td className="p-2 md:p-3 max-w-[120px] md:max-w-[200px] truncate" title={expense.description || '-'}>
+                      {expense.description || '-'}
+                    </td>
+                  </tr>
+                ))}
+                {expenses.filter(e => e.category === 'Grocery').length === 0 && (
+                  <tr>
+                    <td colSpan="4" className="p-4 text-center text-slate-600">
+                      No grocery expenses logged. Add your first grocery expense to get started!
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* General Expenses Table */}
+    <div className="bg-white rounded-lg shadow-sm border border-slate-200">
+      <div className="p-4">
+        <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
+          <CreditCard className="w-5 h-5 mr-2" style={{ color: '#EF4444' }} />
+          Recent General Expenses
+        </h3>
+        <div className="overflow-x-auto">
+          <div className="min-w-[600px]">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 text-slate-600">
+                <tr>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Date</th>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Category</th>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Amount</th>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {expenses.filter(e => e.category !== 'Grocery').slice(0, 5).map(expense => (
+                  <tr key={expense.id} className="border-t border-slate-200">
+                    <td className="p-2 md:p-3 whitespace-nowrap">{expense.date}</td>
+                    <td className="p-2 md:p-3 font-medium text-slate-800 whitespace-nowrap">{expense.category}</td>
+                    <td className="p-2 md:p-3 whitespace-nowrap">{currencySymbol}{expense.amount.toFixed(2)}</td>
+                    <td className="p-2 md:p-3 max-w-[120px] md:max-w-[200px] truncate" title={expense.description || '-'}>
+                      {expense.description || '-'}
+                    </td>
+                  </tr>
+                ))}
+                {expenses.filter(e => e.category !== 'Grocery').length === 0 && (
+                  <tr>
+                    <td colSpan="4" className="p-4 text-center text-slate-600">
+                      No general expenses logged. Add your first expense to get started!
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Incomes Table */}
+    <div className="bg-white rounded-lg shadow-sm border border-slate-200">
+      <div className="p-4">
+        <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
+          <DollarSign className="w-5 h-5 mr-2" style={{ color: '#10B981' }} />
+          Recent Incomes
+        </h3>
+        <div className="overflow-x-auto">
+          <div className="min-w-[600px]">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 text-slate-600">
+                <tr>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Date</th>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Source</th>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Amount</th>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {incomes.slice(0, 5).map(income => (
+                  <tr key={income.id} className="border-t border-slate-200">
+                    <td className="p-2 md:p-3 whitespace-nowrap">{income.date}</td>
+                    <td className="p-2 md:p-3 font-medium text-slate-800 whitespace-nowrap">{income.source}</td>
+                    <td className="p-2 md:p-3 whitespace-nowrap">{currencySymbol}{income.amount.toFixed(2)}</td>
+                    <td className="p-2 md:p-3 max-w-[120px] md:max-w-[200px] truncate" title={income.description || '-'}>
+                      {income.description || '-'}
+                    </td>
+                  </tr>
+                ))}
+                {incomes.length === 0 && (
+                  <tr>
+                    <td colSpan="4" className="p-4 text-center text-slate-600">
+                      No incomes logged. Add your first income to get started!
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Debt Summary Table */}
+    <div className="bg-white rounded-lg shadow-sm border border-slate-200">
+      <div className="p-4">
+        <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
+          <HandCoins className="w-5 h-5 mr-2" style={{ color: '#8B5CF6' }} />
+          Debt Summary
+        </h3>
+        <div className="overflow-x-auto">
+          <div className="min-w-[800px]">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 text-slate-600">
+                <tr>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Date</th>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Person/Entity</th>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Type</th>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Amount</th>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Status</th>
+                  <th className="p-2 md:p-3 font-semibold whitespace-nowrap">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {debts.slice(0, 5).map(debt => (
+                  <tr key={debt.id} className="border-t border-slate-200">
+                    <td className="p-2 md:p-3 whitespace-nowrap">{debt.date}</td>
+                    <td className="p-2 md:p-3 font-medium text-slate-800 whitespace-nowrap">{debt.person}</td>
+                    <td className="p-2 md:p-3 whitespace-nowrap">{debt.type.charAt(0).toUpperCase() + debt.type.slice(1)}</td>
+                    <td className="p-2 md:p-3 whitespace-nowrap">{currencySymbol}{debt.amount.toFixed(2)}</td>
+                    <td className="p-2 md:p-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${debt.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {debt.status.charAt(0).toUpperCase() + debt.status.slice(1)}
+                      </span>
+                    </td>
+                    <td className="p-2 md:p-3">
+                      {debt.status === 'unpaid' && (
+                        <button
+                          onClick={() => handleMarkDebtPaid(debt.id)}
+                          className="px-3 py-1 bg-green-600 text-white rounded-md text-sm font-semibold hover:bg-green-700 transition-colors whitespace-nowrap"
+                        >
+                          Mark Paid
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {debts.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="p-4 text-center text-slate-600">
+                      No debts logged. Add your first debt to get started!
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
         {activeTab === 'analytics' && (
-          <div className="space-y-8">
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between md:items-center gap-4">
-              <h2 className="text-xl font-bold text-slate-800 flex items-center">
-                <TrendingUp className="mr-3" style={{ color: '#3B82F6' }} />
+          <div className="space-y-6">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+              <h2 className="text-lg font-bold text-slate-800 flex items-center">
+                <TrendingUp className="mr-2 w-5 h-5" style={{ color: '#3B82F6' }} />
                 Finance Analytics
               </h2>
               <div className="flex-shrink-0">
@@ -949,15 +1173,15 @@ const ExpenseTracker = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
                 <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
-                  <TrendingUp className="mr-2" style={{ color: '#3B82F6' }} />
+                  <TrendingUp className="mr-2 w-5 h-5" style={{ color: '#3B82F6' }} />
                   Income & Expense Trends
                 </h3>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={getChartData()} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                    <LineChart data={getChartData()} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="date" stroke="#64748b" fontSize={12} />
                       <YAxis stroke="#64748b" fontSize={12} />
@@ -998,9 +1222,9 @@ const ExpenseTracker = () => {
                   </ResponsiveContainer>
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
                 <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
-                  <PieIcon className="mr-2" style={{ color: '#3B82F6' }} />
+                  <PieIcon className="mr-2 w-5 h-5" style={{ color: '#3B82F6' }} />
                   Expense Categories
                 </h3>
                 <div className="h-80">
@@ -1027,14 +1251,14 @@ const ExpenseTracker = () => {
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
               <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
-                <BarChart3 className="mr-2" style={{ color: '#3B82F6' }} />
+                <BarChart3 className="mr-2 w-5 h-5" style={{ color: '#3B82F6' }} />
                 Budget vs Actual
               </h3>
               <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%"/>
-                  <BarChart data={getBarChartData()} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={getBarChartData()} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="category" stroke="#64748b" fontSize={12} />
                     <YAxis stroke="#64748b" fontSize={12} />
@@ -1042,17 +1266,18 @@ const ExpenseTracker = () => {
                     <Bar dataKey="budget" name="Budget" fill="#3B82F6" />
                     <Bar dataKey="spent" name="Spent" fill="#EF4444" />
                   </BarChart>
-                </div>
+                </ResponsiveContainer>
               </div>
+            </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
               <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
-                <HandCoins className="mr-2" style={{ color: '#8B5CF6' }} />
+                <HandCoins className="mr-2 w-5 h-5" style={{ color: '#8B5CF6' }} />
                 Debt Trends
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={getDebtChartData()} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                  <LineChart data={getDebtChartData()} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="date" stroke="#64748b" fontSize={12} />
                     <YAxis stroke="#64748b" fontSize={12} />
@@ -1078,9 +1303,9 @@ const ExpenseTracker = () => {
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
               <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
-                <Award className="mr-2" style={{ color: '#3B82F6' }} />
+                <Award className="mr-2 w-5 h-5" style={{ color: '#3B82F6' }} />
                 {viewPeriod.charAt(0).toUpperCase() + viewPeriod.slice(1)} Summary
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1091,7 +1316,7 @@ const ExpenseTracker = () => {
                   { label: 'Total Debt Lent', value: stats.totalDebtLent, unit: currencySymbol, color: '#8B5CF6' }
                 ].map((stat, idx) => (
                   <div key={idx} className="text-center">
-                    <p className="text-2xl font-bold" style={{ color: stat.color }}>{stat.unit}{stat.value}</p>
+                    <p className="text-xl font-bold" style={{ color: stat.color }}>{stat.unit}{stat.value}</p>
                     <p className="text-sm text-slate-600">{stat.label}</p>
                     <p className="text-xs text-slate-500">{stat.unit}</p>
                   </div>
@@ -1103,9 +1328,9 @@ const ExpenseTracker = () => {
 
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-            <div className="bg-white p-7 rounded-lg shadow-xl w-full max-w-md m-4">
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Confirm Deletion</h2>
-              <p className="text-slate-600 mb-6">Are you sure you want to delete ALL finance data? This action cannot be undone.</p>
+            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md m-4">
+              <h2 className="text-lg font-bold text-slate-900 mb-2">Confirm Deletion</h2>
+              <p className="text-sm text-slate-600 mb-6">Are you sure you want to delete ALL finance data? This action cannot be undone.</p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
@@ -1124,7 +1349,7 @@ const ExpenseTracker = () => {
           </div>
         )}
       </div>
-    </div>
+    </ExpenseTrackerErrorBoundary>
   );
 };
 

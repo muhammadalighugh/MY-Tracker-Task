@@ -22,7 +22,7 @@ export default function Signin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     if (!formData.email || !formData.password) {
       toast.error('Please fill in all fields');
       setLoading(false);
@@ -30,9 +30,18 @@ export default function Signin() {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, formData.email, formData.password);
-      toast.success('Successfully signed in! Redirecting...');
-      navigate('/dashboard');
+      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
+
+      // Check if email is verified
+      if (user.emailVerified) {
+        toast.success('Successfully signed in! Redirecting...');
+        setTimeout(() => navigate('/dashboard'), 1500);
+      } else {
+        await auth.signOut();
+        toast.error('Please verify your email before signing in.');
+        setTimeout(() => navigate('/verify-email'), 1500);
+      }
     } catch (error) {
       let errorMessage = 'An error occurred during sign in';
       
@@ -63,11 +72,21 @@ export default function Signin() {
   };
 
   const handleGoogleSignin = async () => {
+    setLoading(true);
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      toast.success('Successfully signed in with Google! Redirecting...');
-      navigate('/dashboard');
+      const userCredential = await signInWithPopup(auth, provider);
+      const user = userCredential.user;
+
+      // Check if email is verified (Google accounts are typically verified)
+      if (user.emailVerified) {
+        toast.success('Successfully signed in with Google! Redirecting...');
+        setTimeout(() => navigate('/dashboard'), 1500);
+      } else {
+        await auth.signOut();
+        toast.error('Please verify your email before signing in.');
+        setTimeout(() => navigate('/verify-email'), 1500);
+      }
     } catch (error) {
       let errorMessage = 'An error occurred during Google sign in';
       
@@ -78,6 +97,8 @@ export default function Signin() {
       }
       
       toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -101,7 +122,7 @@ export default function Signin() {
              style={{ animationDelay: '0s', animationDuration: '4s' }} />
         <div className="absolute top-3/4 right-1/4 w-40 sm:w-56 md:w-72 lg:w-80 h-40 sm:h-56 md:h-72 lg:h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse" 
              style={{ animationDelay: '2s', animationDuration: '6s' }} />
-        <div className="absolute bottom-1/4 left-1/3 w-32 sm:w-48 md:w-56 lg:h-64 h-32 sm:h-48 md:h-56 lg:h-64 bg-purple-500/20 rounded-full blur-3xl animate-pulse" 
+        <div className="absolute bottom-1/4 left-1/3 w-32 sm:w-48 md:w-56  h-32 sm:h-48 md:h-56 lg:h-64 bg-purple-500/20 rounded-full blur-3xl animate-pulse" 
              style={{ animationDelay: '1s', animationDuration: '5s' }} />
       </div>
 
@@ -128,8 +149,20 @@ export default function Signin() {
               disabled={loading}
               className="w-full flex items-center justify-center py-2 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <FaGoogle className="mr-2" size={18} />
-              Google
+              {loading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <FaGoogle className="mr-2" size={18} />
+                  Google
+                </>
+              )}
             </button>
           </div>
 

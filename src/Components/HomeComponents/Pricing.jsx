@@ -3,7 +3,7 @@ import { Check } from 'lucide-react'
 const pricing = [
   {
     name: 'Starter',
-    price: 'Free',
+    price: '$8',
     description: 'Perfect for individuals getting started with goal tracking.',
     features: [
       'Up to 5 active goals',
@@ -11,12 +11,13 @@ const pricing = [
       'Mobile app access',
       'Email notifications',
     ],
-    cta: 'Start Free',
+    cta: 'Get Started',
     popular: false,
+    link: '/payment',
   },
   {
     name: 'Professional',
-    price: '$12',
+    price: '$15',
     description: 'Ideal for professionals and small teams.',
     features: [
       'Unlimited goals',
@@ -26,12 +27,13 @@ const pricing = [
       'Custom reports',
       'API access',
     ],
-    cta: 'Start Trial',
+    cta: 'Coming Soon',
     popular: true,
+    disabled: true,
   },
   {
     name: 'Enterprise',
-    price: 'Custom',
+    price: '$49',
     description: 'For large organizations with advanced needs.',
     features: [
       'Everything in Professional',
@@ -41,8 +43,9 @@ const pricing = [
       'Custom integrations',
       'SLA guarantee',
     ],
-    cta: 'Contact Sales',
+    cta: 'Coming Soon',
     popular: false,
+    disabled: true,
   },
 ]
 
@@ -64,7 +67,7 @@ export default function Pricing() {
                 tier.popular 
                   ? 'bg-white/10 ring-white/20 relative' 
                   : 'bg-white/5 ring-white/10'
-              } hover:bg-white/15 transition-all duration-300 backdrop-blur-sm`}
+              } ${tier.disabled ? 'opacity-70' : 'hover:bg-white/15'} transition-all duration-300 backdrop-blur-sm`}
             >
               {tier.popular && (
                 <div className="absolute -top-5 left-0 right-0 mx-auto w-32 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-2 text-sm font-medium text-white text-center">
@@ -78,9 +81,7 @@ export default function Pricing() {
                 <p className="mt-4 text-sm leading-6 text-gray-300">{tier.description}</p>
                 <p className="mt-6 flex items-baseline gap-x-1">
                   <span className="text-4xl font-bold tracking-tight text-white">{tier.price}</span>
-                  {tier.price !== 'Free' && tier.price !== 'Custom' && (
-                    <span className="text-sm font-semibold leading-6 text-gray-300">/month</span>
-                  )}
+                  <span className="text-sm font-semibold leading-6 text-gray-300">/month</span>
                 </p>
                 <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-300">
                   {tier.features.map((feature) => (
@@ -92,12 +93,15 @@ export default function Pricing() {
                 </ul>
               </div>
               <a
-                href="#"
-                className={`mt-8 block rounded-xl py-3 px-6 text-center text-sm font-semibold leading-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition-all duration-200 ${
-                  tier.popular
+                href={tier.link || '#'}
+                className={`mt-8 block rounded-xl py-3 px-6 text-center text-sm font-semibold leading-6  focus-visible:outline-2 focus-visible:outline-offset-2 transition-all duration-200 ${
+                  tier.disabled
+                    ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                    : tier.popular
                     ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm hover:from-indigo-500 hover:to-purple-500 hover:shadow-lg hover:shadow-indigo-500/25 transform hover:scale-105'
                     : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
+                onClick={(e) => tier.disabled && e.preventDefault()}
               >
                 {tier.cta}
               </a>

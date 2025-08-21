@@ -1,6 +1,6 @@
 // src/Components/Common/Header.jsx
 import React, { useState, useEffect } from "react";
-import { Menu, Bell, CalendarDays } from "lucide-react";
+import { Menu, Bell, CalendarDays, Hourglass } from "lucide-react";
 import { useSidebar } from "../../context/SidebarContext";
 
 export default function Header() {
@@ -9,6 +9,7 @@ export default function Header() {
     date: "",
     time: "",
   });
+  const [showNotification, setShowNotification] = useState(false);
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -47,7 +48,7 @@ export default function Header() {
         </div>
 
         {/* Right: Date + Notification */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 relative">
           <div className="hidden md:flex items-center gap-2 text-sm text-slate-600">
             <CalendarDays size={16} className="text-slate-400" />
             <span>{currentDateTime.date}</span>
@@ -55,13 +56,37 @@ export default function Header() {
             <span>{currentDateTime.time}</span>
           </div>
 
+          {/* Notification Bell */}
           <button
+            onClick={() => setShowNotification(!showNotification)}
             className="relative text-slate-500 hover:text-slate-800"
             aria-label="Notifications"
           >
             <Bell size={20} />
             <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
           </button>
+
+          {/* Notification Popup */}
+          {showNotification && (
+            <div className="absolute top-10 right-0 bg-white border border-slate-200 rounded-lg shadow-lg p-4 w-64 text-center z-50">
+              <Hourglass size={32} className="text-indigo-500 mx-auto mb-2" />
+              <h3 className="text-sm font-semibold text-slate-900">
+                Notifications Coming Soon
+              </h3>
+              <p className="text-xs text-slate-600 mt-1 mb-3">
+                We’re working to bring you real-time notifications. Stay tuned!
+              </p>
+              <p className="text-xs text-slate-700">
+                Feedback?{" "}
+                <a
+                  href="mailto:info@amigsol.com"
+                  className="text-indigo-600 font-medium hover:underline"
+                >
+                  info@amigsol.com
+                </a>
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </header>

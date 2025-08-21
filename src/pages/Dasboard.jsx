@@ -1,21 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-
 import { useSidebar } from "../context/SidebarContext";
-
 import { doc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
-
 import { auth, db } from "../firebase/firebase.config";
-
 import { useAuthState } from "react-firebase-hooks/auth";
-
 import { toast } from "react-toastify";
-
 import { useNavigate } from "react-router-dom";
-
 import {
   HeartHandshake, Code, Dumbbell, BookOpen, CircleDollarSign, Carrot, Smartphone,
   PlusCircle, X, ListChecks, Clock, Timer, Play, Pause, RotateCcw, Expand, Shrink,
-  Palette, FileClock, Save, Trash2, Download
+  Palette, FileClock, Save, Trash2, Download, Hourglass, BarChart3, Settings
 } from "lucide-react";
 
 // --- PREDEFINED DATA & CONSTANTS ---
@@ -310,24 +303,40 @@ function CustomTrackerModal({ isOpen, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-[60] transition-opacity duration-300">
-      <div className="bg-white/90 p-7 rounded-xl w-full max-w-md shadow-2xl border border-slate-200/50">
-        <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center"><PlusCircle className="mr-2" size={20} /> Create Custom Tracker</h2>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Tracker Name</label>
-            <input type="text" className="w-full px-3 py-2 bg-white/70 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm text-slate-800 placeholder-slate-400" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Meditation Tracker" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Select Icon</label>
-            <select className="w-full px-3 py-2 bg-white/70 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm text-slate-800" value={iconName} onChange={(e) => setIconName(e.target.value)}>
-              {Object.keys(ICON_MAP).map((key) => (<option key={key} value={key}>{key}</option>))}
-            </select>
-          </div>
+      <div className="bg-white/90 p-7 rounded-xl w-full max-w-md shadow-2xl border border-slate-200/50 text-center">
+        {/* Icon */}
+        <div className="flex justify-center mb-4">
+          <Hourglass size={48} className="text-indigo-500" />
         </div>
-        <div className="flex justify-end gap-3 mt-6">
-          <button onClick={onClose} className="px-4 py-2 bg-slate-100 text-slate-800 rounded-md hover:bg-slate-200 transition-colors text-sm font-semibold" disabled={isSubmitting}>Cancel</button>
-          <button onClick={handleSave} className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm font-semibold disabled:bg-indigo-400 disabled:cursor-not-allowed" disabled={!name || isSubmitting}>
-            {isSubmitting ? "Creating..." : "Create Tracker"}
+
+        {/* Title */}
+        <h2 className="text-xl font-bold text-slate-900 mb-2">
+          This Service is Coming Soon
+        </h2>
+
+        {/* Description */}
+        <p className="text-slate-600 text-sm mb-4">
+          We’re working hard to bring you this feature. Stay tuned for updates!
+        </p>
+
+        {/* Feedback Email */}
+        <p className="text-slate-700 text-sm">
+          For feedback, write to{" "}
+          <a
+            href="mailto:info@amigsol.com"
+            className="text-indigo-600 font-semibold hover:underline"
+          >
+            info@amigsol.com
+          </a>
+        </p>
+
+        {/* Close Button */}
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm font-semibold"
+          >
+            Close
           </button>
         </div>
       </div>
@@ -337,9 +346,10 @@ function CustomTrackerModal({ isOpen, onClose, onSave }) {
 
 // --- CHILD COMPONENT: TrackerManagerModal ---
 
-function TrackerManagerModal({ isOpen, onClose, activeTrackers, customTrackers, handleToggleTracker, handleCreateCustomTracker, isUpdating }) {
+function TrackerManagerModal({ isOpen, onClose, activeTrackers, customTrackers, handleToggleTracker, handleCreateCustomTracker, isUpdating, isPremium }) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const allTrackers = [...PREDEFINED_TRACKERS, ...customTrackers];
+  const freeTrackerIds = [1, 6];
 
   const handleSaveCustom = async (name, iconName) => {
     await handleCreateCustomTracker(name, iconName);
@@ -366,11 +376,17 @@ function TrackerManagerModal({ isOpen, onClose, activeTrackers, customTrackers, 
                 const Icon = ICON_MAP[tracker.iconName];
                 if (!Icon) return null;
                 const isActive = activeTrackers.includes(tracker.id);
+                const isFreeTracker = freeTrackerIds.includes(tracker.id);
                 return (
                   <div key={tracker.id} className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-                    <div className="flex items-center mb-3">
-                      <span className="transition-colors duration-300" style={{ color: isActive ? tracker.color : "#94A3B8" }}><Icon size={20} /></span>
-                      <h3 className="ml-3 text-md font-semibold text-slate-800">{tracker.name}</h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center">
+                        <span className="transition-colors duration-300" style={{ color: isActive ? tracker.color : "#94A3B8" }}><Icon size={20} /></span>
+                        <h3 className="ml-3 text-md font-semibold text-slate-800">{tracker.name}</h3>
+                      </div>
+                      {!isPremium && !isFreeTracker && (
+                        <span className="bg-indigo-600 text-white text-xs font-semibold px-2 py-1 rounded-full">Pro</span>
+                      )}
                     </div>
                     <div className="flex items-center mb-4">
                       <span className={`h-2 w-2 rounded-full mr-2 ${isActive ? "bg-emerald-500" : "bg-slate-400"}`}></span>
@@ -412,6 +428,7 @@ function DashboardContent() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [hasInitialData, setHasInitialData] = useState(false);
   const [timedTasks, setTimedTasks] = useState([]);
+  const [isPremium, setIsPremium] = useState(false);
 
   const userDocRef = user ? doc(db, "users", user.uid) : null;
 
@@ -426,7 +443,7 @@ function DashboardContent() {
   const initializeUserData = useCallback(async () => {
     if (!userDocRef) return;
     try {
-      await setDoc(userDocRef, { activeTrackers: [1], customTrackers: [], timedTasks: [] });
+      await setDoc(userDocRef, { activeTrackers: [1], customTrackers: [], timedTasks: [], isPremium: false });
       setHasInitialData(true);
     } catch (err) { console.error("Initialization error:", err); toast.error("Failed to initialize data"); }
   }, [userDocRef]);
@@ -439,6 +456,7 @@ function DashboardContent() {
           setActiveTrackers(data.activeTrackers || [1]);
           setCustomTrackers(data.customTrackers || []);
           setTimedTasks(data.timedTasks || []);
+          setIsPremium(data.isPremium || false);
           setHasInitialData(true);
         } else {
           initializeUserData();
@@ -478,7 +496,13 @@ function DashboardContent() {
       toast.info("Task log deleted.");
   };
 
+  const freeTrackerIds = [1, 6];
+
   const handleToggleTracker = async (trackerId) => {
+    if (!isPremium && !freeTrackerIds.includes(trackerId) && !activeTrackers.includes(trackerId)) {
+      toast.error("Upgrade to Premium to activate this tracker");
+      return;
+    }
     const originalActive = [...activeTrackers];
     const newActiveTrackers = activeTrackers.includes(trackerId) ? activeTrackers.filter(id => id !== trackerId) : [...activeTrackers, trackerId];
     setActiveTrackers(newActiveTrackers);
@@ -517,16 +541,45 @@ function DashboardContent() {
   return (
     <div className={`min-h-screen bg-slate-100 transition-all duration-300 ${collapsed ? "lg:ml-20" : "lg:ml-64"}`}>
       <main className="p-6 md:p-8">
-        {/* <h1 className="text-3xl font-bold text-slate-800 mb-6">Dashboard</h1> */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div onClick={() => setManagerModalOpen(true)} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 cursor-pointer flex flex-col justify-between">
-            <div>
-              <div className="flex items-center text-indigo-600 mb-3"><ListChecks size={32} /></div>
+          {/* Enhanced Tracker Manager Card */}
+          <div onClick={() => setManagerModalOpen(true)} className="bg-gradient-to-br from-indigo-50 to-slate-50 p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 cursor-pointer flex flex-col justify-between relative overflow-hidden group">
+            {/* Decorative elements */}
+            <div className="absolute -top-4 -right-4 w-24 h-24 bg-indigo-100 rounded-full opacity-50 group-hover:opacity-70 transition-opacity"></div>
+            <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-indigo-200 rounded-full opacity-30 group-hover:opacity-50 transition-opacity"></div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center text-indigo-600">
+                  <div className="p-3 bg-indigo-100 rounded-lg">
+                    <Settings size={24} />
+                  </div>
+                </div>
+                <div className="flex items-center text-sm font-medium text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full">
+                  <BarChart3 size={14} className="mr-1" />
+                  {activeTrackers.length} of {PREDEFINED_TRACKERS.length + customTrackers.length} active
+                </div>
+              </div>
+              
               <h2 className="text-xl font-semibold text-slate-800 mb-2">Manage Your Trackers</h2>
-              <p className="text-slate-600">Click to add, remove, or customize the trackers available in your sidebar.</p>
+              <p className="text-slate-600 mb-4">Customize your dashboard by enabling or disabling trackers in your sidebar.</p>
+              
+              <div className="flex items-center text-sm text-slate-500 mb-2">
+                <span className="h-2 w-2 bg-emerald-500 rounded-full mr-2"></span>
+                <span>{activeTrackers.length} trackers enabled</span>
+              </div>
+              <div className="flex items-center text-sm text-slate-500">
+                <span className="h-2 w-2 bg-slate-400 rounded-full mr-2"></span>
+                <span>{PREDEFINED_TRACKERS.length + customTrackers.length - activeTrackers.length} trackers disabled</span>
+              </div>
             </div>
-            <button className="mt-6 w-full text-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm font-semibold">Open Manager</button>
+            
+            <button className="mt-6 w-full text-center px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-semibold shadow-sm group-hover:shadow-md flex items-center justify-center gap-2">
+              <ListChecks size={16} />
+              Open Tracker Manager
+            </button>
           </div>
+          
           <DigitalWatch tasks={timedTasks} onSaveTask={handleSaveTask} onDeleteTask={handleDeleteTask} />
         </div>
       </main>
@@ -539,6 +592,7 @@ function DashboardContent() {
         handleToggleTracker={handleToggleTracker}
         handleCreateCustomTracker={handleCreateCustomTracker}
         isUpdating={isUpdating}
+        isPremium={isPremium}
       />
     </div>
   );

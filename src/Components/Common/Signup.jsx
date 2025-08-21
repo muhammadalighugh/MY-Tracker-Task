@@ -5,7 +5,8 @@ import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
-  updateProfile
+  updateProfile,
+  sendEmailVerification
 } from 'firebase/auth';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -58,8 +59,15 @@ export default function Signup() {
         displayName: formData.name
       });
 
-      toast.success('Account created successfully! Redirecting...');
-      setTimeout(() => navigate('/dashboard'), 1500);
+      // Send email verification
+      await sendEmailVerification(userCredential.user);
+      toast.success('Account created! Please check your email to verify your account.');
+
+      // Sign out the user to prevent automatic login
+      await auth.signOut();
+
+      // Redirect to a verification page or prompt user to verify
+      setTimeout(() => navigate('/verify-email'), 1500);
     } catch (error) {
       let errorMessage = 'Signup failed';
       
@@ -92,9 +100,19 @@ export default function Signup() {
     const provider = new GoogleAuthProvider();
 
     try {
-      await signInWithPopup(auth, provider);
-      toast.success('Signed up with Google! Redirecting...');
-      setTimeout(() => navigate('/dashboard'), 1500);
+      const userCredential = await signInWithPopup(auth, provider);
+      const user = userCredential.user;
+
+      // Check if email is verified (Google accounts are typically verified)
+      if (user.emailVerified) {
+        toast.success('Signed up with Google! Redirecting...');
+        setTimeout(() => navigate('/dashboard'), 1500);
+      } else {
+        // In rare cases, if email is not verified, sign out and prompt verification
+        await auth.signOut();
+        toast.error('Please verify your email to continue.');
+        setTimeout(() => navigate('/verify-email'), 1500);
+      }
     } catch (error) {
       let errorMessage = 'Google signup failed';
       

@@ -1,32 +1,92 @@
-// src/components/ProtectedRoute.jsx
-import { Navigate } from 'react-router-dom';
-import { useContext, useEffect } from 'react';
-import { AuthContext } from '../context/AuthContext.jsx'; // Adjust path
+import { useEffect, useState } from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth, db } from "../firebase/firebase.config";
+import { doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { toast } from "react-toastify";
 
-export const ProtectedRoute = ({ children }) => {
-  const context = useContext(AuthContext);
+export function ProtectedRoute({ children }) {
+  const [user, loading, error] = useAuthState(auth);
+  const [isPremium, setIsPremium] = useState(null); // null indicates loading
+  const location = useLocation();
 
-  // Log context for debugging (remove in production)
+  // Define free tracker paths (corresponding to IDs 1 and 6)
+  const freeTrackerPaths = ["/dashboard/prayer", "/dashboard/diet"];
+
+  // Fetch premium status from Firestore
   useEffect(() => {
-    if (context === undefined) {
-      console.warn('AuthContext is undefined. Ensure AuthProvider is wrapped around the app.');
+    if (user) {
+      const userDocRef = doc(db, "users", user.uid);
+      const unsubscribe = onSnapshot(
+        userDocRef,
+        (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            const premium = data.isPremium || false;
+            const endDate = data.premiumEndDate;
+            if (premium && endDate && endDate.toDate() < new Date()) {
+              updateDoc(userDocRef, {
+                isPremium: false,
+                premiumStartDate: null,
+                premiumEndDate: null,
+              }).catch((err) => console.error("Failed to update expiration:", err));
+              setIsPremium(false);
+            } else {
+              setIsPremium(premium);
+            }
+          } else {
+            setIsPremium(false); // Default to non-premium if no doc exists
+          }
+        },
+        (err) => {
+          console.error("Error fetching premium status:", err);
+          toast.error("Failed to load user data");
+          setIsPremium(false);
+        }
+      );
+      return () => unsubscribe();
+    } else {
+      setIsPremium(false);
     }
-  }, [context]);
+  }, [user]);
 
-  // Fallback if context is undefined
-  if (context === undefined) {
-    return <div>Error: Authentication context not found. Check AuthProvider setup.</div>;
+  // Handle loading and error states
+  if (loading || isPremium === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+      </div>
+    );
   }
 
-  const { user, loading } = context;
-
-  if (loading) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
-  }
-
-  if (!user) {
+  if (error) {
+    toast.error("Authentication error: " + error.message);
     return <Navigate to="/signin" replace />;
   }
 
+  if (!user) {
+    toast.error("Please sign in to access this page");
+    return <Navigate to="/signin" replace state={{ from: location }} />;
+  }
+
+  // Check if the current route is a premium tracker
+  const isPremiumTracker =
+    !freeTrackerPaths.includes(location.pathname) &&
+    location.pathname.startsWith("/dashboard") &&
+    ![
+      "/dashboard",
+      "/dashboard/profile",
+      "/dashboard/create-task",
+      "/dashboard/card",
+      "/dashboard/mypayment",
+      "/dashboard/notes",
+    ].includes(location.pathname);
+
+  // Redirect non-premium users trying to access premium trackers
+  if (isPremiumTracker && !isPremium) {
+    toast.error("Upgrade to Premium to access this tracker");
+    return <Navigate to="/payment" replace state={{ from: location }} />;
+  }
+
   return children;
-};
+}

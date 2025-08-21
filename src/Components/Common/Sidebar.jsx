@@ -1,10 +1,11 @@
-import React, { useContext } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useSidebar } from "../../context/SidebarContext";
 import { AuthContext } from "../../context/AuthContext";
 import { signOut } from "firebase/auth";
-import { auth } from "../../firebase/firebase.config"; 
+import { auth, db } from "../../firebase/firebase.config";
 import { toast } from "react-toastify";
+import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import {
   ChevronLeft,
   ChevronRight,
@@ -20,8 +21,9 @@ import {
   Smartphone,
   CircleDollarSign,
   ListTodo,
-  IdCardLanyard ,
-  NotebookPen
+  IdCardLanyard,
+  NotebookPen,
+  LogOut,
 } from "lucide-react";
 
 const ICON_MAP = {
@@ -35,7 +37,8 @@ const ICON_MAP = {
   Home,
   ListTodo,
   NotebookPen,
-  IdCardLanyard 
+  IdCardLanyard,
+  LogOut,
 };
 
 const PREDEFINED_TRACKERS = [
@@ -45,10 +48,10 @@ const PREDEFINED_TRACKERS = [
   { id: 4, name: "Reading Tracker", path: "/dashboard/reading", iconName: "BookOpen", color: "#F59E0B" },
   { id: 5, name: "Expense Tracker", path: "/dashboard/expense", iconName: "CircleDollarSign", color: "#8B5CF6" },
   { id: 6, name: "Health Tracker", path: "/dashboard/diet", iconName: "Carrot", color: "#4F46E5" },
-  { id: 7, name: "Mobile Tracker", path: "/dashboard/mobile", iconName: "Smartphone", color: "#EC4899" }
+  { id: 7, name: "Mobile Tracker", path: "/dashboard/mobile", iconName: "Smartphone", color: "#EC4899" },
 ];
 
-function SidebarLink({ to, iconName, text, collapsed, isActiveTracker, color, isDashboard }) {
+function SidebarLink({ to, iconName, text, collapsed, isAccessible, color, isDashboard, isPremium }) {
   const Icon = ICON_MAP[iconName];
   if (!Icon) {
     console.error(`Invalid iconName: ${iconName}`);
@@ -62,16 +65,16 @@ function SidebarLink({ to, iconName, text, collapsed, isActiveTracker, color, is
           to={to}
           end
           className={({ isActive }) =>
-            `flex items-center ${collapsed ? 'justify-center px-2 py-2' : 'px-3 py-2'} rounded-lg transition-all duration-200 ${
+            `flex items-center ${collapsed ? "justify-center px-2 py-2" : "px-3 py-2"} rounded-lg transition-all duration-200 ${
               isActive
-                ? "bg-indigo-500 text-white font-semibold shadow-md border border-indigo-600"
+                ? "bg-indigo-100 text-indigo-600 font-semibold shadow-md border border-indigo-200"
                 : "hover:bg-indigo-50 text-indigo-600"
             }`
           }
         >
           {({ isActive }) => (
             <>
-              <span className={`flex-shrink-0 transition-colors duration-200 ${isActive ? 'text-white' : 'text-indigo-600'}`}>
+              <span className={`flex-shrink-0 transition-colors duration-200 ${isActive ? "text-indigo-600" : "text-indigo-500"}`}>
                 <Icon size={16} />
               </span>
               {!collapsed && <span className="ml-2 text-sm">{text}</span>}
@@ -84,29 +87,39 @@ function SidebarLink({ to, iconName, text, collapsed, isActiveTracker, color, is
 
   return (
     <div className="mx-2 my-1">
-      {isActiveTracker ? (
+      {isAccessible ? (
         <NavLink
           to={to}
           className={({ isActive }) =>
-            `flex items-center ${collapsed ? 'justify-center px-2 py-2' : 'px-3 py-2'} rounded-lg transition-all duration-200 ${
+            `flex items-center ${collapsed ? "justify-center px-2 py-2" : "px-3 py-2"} rounded-lg transition-all duration-200 ${
               isActive
-                ? "bg-blue-500 text-white font-semibold shadow-lg border border-blue-600"
-                : "hover:bg-slate-100 text-slate-600"
+                ? `${isPremium && to === "/dashboard/mypayment" ? "bg-emerald-100 text-emerald-600 border-emerald-200" : "bg-blue-100 text-blue-600 border-blue-200"} font-semibold shadow-md border`
+                : `${to === "/dashboard/mypayment" ? (isPremium ? "hover:bg-emerald-50 text-emerald-600" : "hover:bg-indigo-50 text-indigo-600") : "hover:bg-slate-100 text-slate-600"}`
             }`
           }
         >
           {({ isActive }) => (
             <>
-              <span className={`flex-shrink-0 transition-colors duration-200 ${isActive ? 'text-white' : 'text-slate-600'}`}>
+              <span
+                className={`flex-shrink-0 transition-colors duration-200 ${
+                  isActive
+                    ? `${to === "/dashboard/mypayment" && isPremium ? "text-emerald-600" : "text-blue-600"}`
+                    : `${to === "/dashboard/mypayment" ? (isPremium ? "text-emerald-600" : "text-indigo-600") : "text-slate-600"}`
+                }`}
+              >
                 <Icon size={16} />
               </span>
-              {!collapsed && <span className="ml-2 text-sm font-medium">{text}</span>}
+              {!collapsed && (
+                <span className="ml-2 text-sm font-medium">
+                  {to === "/dashboard/mypayment" ? (isPremium ? "My Subscription" : "View Plans") : text}
+                </span>
+              )}
             </>
           )}
         </NavLink>
       ) : (
         <div
-          className={`flex items-center ${collapsed ? 'justify-center px-2 py-2' : 'px-3 py-2'} rounded-lg text-slate-400 opacity-50 cursor-not-allowed`}
+          className={`flex items-center ${collapsed ? "justify-center px-2 py-2" : "px-3 py-2"} rounded-lg text-slate-400 opacity-50 cursor-not-allowed`}
           aria-disabled="true"
         >
           <span className="flex-shrink-0 text-slate-400">
@@ -123,8 +136,32 @@ export default function Sidebar() {
   const { sidebarOpen, setSidebarOpen, collapsed, setCollapsed, activeTrackers, trackersExpanded, setTrackersExpanded, customTrackers } = useSidebar();
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [isPremium, setIsPremium] = useState(false);
 
-  // Extract first name from displayName or fallback to "User" if null
+  useEffect(() => {
+    if (user) {
+      const userDocRef = doc(db, "users", user.uid);
+      const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const premium = data.isPremium || false;
+          const endDate = data.premiumEndDate;
+          if (premium && endDate && endDate.toDate() < new Date()) {
+            updateDoc(userDocRef, {
+              isPremium: false,
+              premiumStartDate: null,
+              premiumEndDate: null,
+            }).catch((err) => console.error("Failed to update expiration:", err));
+            setIsPremium(false);
+          } else {
+            setIsPremium(premium);
+          }
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [user]);
+
   const displayName = user?.displayName || "User";
   const firstName = displayName.split(" ")[0];
   const avatarLetter = firstName.charAt(0).toUpperCase();
@@ -141,6 +178,7 @@ export default function Sidebar() {
   };
 
   const allTrackers = [...PREDEFINED_TRACKERS, ...customTrackers];
+  const freeTrackerIds = [1, 6];
 
   return (
     <>
@@ -159,7 +197,7 @@ export default function Sidebar() {
       >
         {/* Header */}
         <div className="flex items-center justify-between h-14 px-3 border-b border-slate-200">
-          {!collapsed && <h1 className="text-lg font-bold text-slate-800">TrackerPro</h1>}
+          {!collapsed && <h1 className="text-lg font-bold text-slate-800">TrackFlow</h1>}
           <div className="flex items-center">
             <button
               onClick={() => setCollapsed(!collapsed)}
@@ -179,20 +217,32 @@ export default function Sidebar() {
         {/* User Info with Alphabetic Avatar */}
         <NavLink
           to="/dashboard/profile"
-          className={`flex items-center ${collapsed ? 'justify-center p-3' : 'p-3'} mt-1 rounded-lg hover:bg-slate-50 transition-colors duration-200`}
+          className={`flex items-center ${collapsed ? "justify-center p-3" : "p-3"} mt-1 rounded-lg hover:bg-slate-50 transition-colors duration-200`}
         >
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center bg-indigo-500 text-white font-bold text-lg"
-          >
+          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-indigo-500 text-white font-bold text-lg">
             {avatarLetter}
           </div>
           {!collapsed && (
             <div className="ml-2">
               <p className="text-xs font-medium text-slate-800">{displayName}</p>
-              <p className="text-[10px] text-emerald-500 font-semibold">Premium Member</p>
+              <p className={`text-[10px] font-semibold ${isPremium ? "text-emerald-500" : "text-slate-500"}`}>
+                {isPremium ? "Premium Member" : "Free Member"}
+              </p>
             </div>
           )}
         </NavLink>
+
+        {/* Upgrade to Pro Button */}
+        {!isPremium && (
+          <div className={`${collapsed ? "flex justify-center" : "px-3"} mt-2`}>
+            <button
+              onClick={() => navigate("/payment")}
+              className={`w-full flex items-center justify-center py-1 px-3 bg-indigo-500 hover:bg-indigo-600 rounded-lg text-white text-sm font-medium transition-colors ${collapsed ? "p-2" : ""}`}
+            >
+              {collapsed ? <CircleDollarSign size={16} /> : "Upgrade to Pro"}
+            </button>
+          </div>
+        )}
 
         {/* Main Navigation */}
         <nav className="mt-2">
@@ -201,7 +251,7 @@ export default function Sidebar() {
             iconName="Home"
             text="Dashboard"
             collapsed={collapsed}
-            isActiveTracker={true}
+            isAccessible={true}
             color="#3B82F6"
             isDashboard={true}
           />
@@ -210,7 +260,7 @@ export default function Sidebar() {
             iconName="ListTodo"
             text="Tasks Todo"
             collapsed={collapsed}
-            isActiveTracker={true}
+            isAccessible={true}
             color="#059669"
           />
           <SidebarLink
@@ -218,16 +268,8 @@ export default function Sidebar() {
             iconName="IdCardLanyard"
             text="Cards"
             collapsed={collapsed}
-            isActiveTracker={true}
+            isAccessible={true}
             color="#059669"
-          />
-          <SidebarLink
-            to="/dashboard/Notes"
-            iconName="NotebookPen"
-            text="Notes"
-            collapsed={collapsed}
-            isActiveTracker={true}
-            color="#DC2626"
           />
         </nav>
 
@@ -235,15 +277,13 @@ export default function Sidebar() {
         <div className="mt-1">
           <button
             onClick={() => setTrackersExpanded(!trackersExpanded)}
-            className={`flex items-center w-full ${collapsed ? 'justify-center px-1 py-2' : 'justify-between px-3 py-2'} bg-green-500 hover:bg-green-600 text-white hover:text-white transition-all duration-200 text-sm`}
+            className={`flex items-center w-full ${collapsed ? "justify-center px-1 py-2" : "justify-between px-3 py-2"} bg-green-500 hover:bg-green-600 text-white hover:text-white transition-all duration-200 text-sm`}
           >
             {collapsed ? (
               trackersExpanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />
             ) : (
               <>
-                <span className="font-semibold text-xs tracking-wide text-white">
-                  MY TRACKERS
-                </span>
+                <span className="font-semibold text-xs tracking-wide text-white">MY TRACKERS</span>
                 {trackersExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
               </>
             )}
@@ -263,7 +303,7 @@ export default function Sidebar() {
                       iconName={t.iconName}
                       text={t.name}
                       collapsed={collapsed}
-                      isActiveTracker={activeTrackers.includes(t.id)}
+                      isAccessible={activeTrackers.includes(t.id) && (isPremium || freeTrackerIds.includes(t.id))}
                       color={t.color}
                     />
                   ))
@@ -272,17 +312,29 @@ export default function Sidebar() {
           )}
         </div>
 
+        {/* My Subscription/View Plans */}
+        <div className="mt-2">
+          <SidebarLink
+            to="/dashboard/mypayment"
+            iconName="CircleDollarSign"
+            text={isPremium ? "My Subscription" : "View Plans"}
+            collapsed={collapsed}
+            isAccessible={true}
+            color={isPremium ? "#10B981" : "#8B5CF6"}
+            isPremium={isPremium}
+          />
+        </div>
+
         {/* Logout Button */}
-        {!collapsed && (
-          <div className="mt-auto p-3">
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center py-1 px-3 bg-red-500 hover:bg-red-600 rounded-lg text-white text-sm font-medium transition-colors"
-            >
-              Logout
-            </button>
-          </div>
-        )}
+        <div className={`${collapsed ? "flex justify-center" : "px-3"} mt-3 mb-3`}>
+          <button
+            onClick={handleLogout}
+            className={`w-full flex items-center ${collapsed ? "justify-center p-2" : "justify-center py-2 px-4"} bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-md transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500`}
+          >
+            <LogOut size={16} className={`${collapsed ? "" : "mr-2"}`} />
+            {!collapsed && <span>Logout</span>}
+          </button>
+        </div>
       </div>
     </>
   );

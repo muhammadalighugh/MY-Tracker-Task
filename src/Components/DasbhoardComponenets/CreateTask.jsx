@@ -87,6 +87,41 @@ const TABS = [
   { id: "calendar", label: "Calendar", icon: CalendarIcon }
 ];
 
+// Helper function to calculate next due date
+const calculateNextDue = (currentDueStr, recurrence, customInterval = 1, customUnit = 'days', alwaysAdvance = false) => {
+  let currentDue = new Date(currentDueStr);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const advanceDate = () => {
+    if (recurrence === 'Daily') {
+      currentDue.setDate(currentDue.getDate() + 1);
+    } else if (recurrence === 'Weekly') {
+      currentDue.setDate(currentDue.getDate() + 7);
+    } else if (recurrence === 'Monthly') {
+      currentDue.setMonth(currentDue.getMonth() + 1);
+    } else if (recurrence === 'Custom') {
+      if (customUnit === 'days') {
+        currentDue.setDate(currentDue.getDate() + customInterval);
+      } else if (customUnit === 'weeks') {
+        currentDue.setDate(currentDue.getDate() + customInterval * 7);
+      } else if (customUnit === 'months') {
+        currentDue.setMonth(currentDue.getMonth() + customInterval);
+      }
+    }
+  };
+
+  if (alwaysAdvance) {
+    advanceDate();
+  }
+
+  while (currentDue < today) {
+    advanceDate();
+  }
+
+  return currentDue.toISOString().split('T')[0];
+};
+
 // Calendar Component
 const SimpleCalendar = ({ tasks, onDateSelect, selectedDate }) => {
   const today = new Date();
@@ -280,7 +315,7 @@ const useTasks = (userId) => {
       );
 
       const allTasksSnapshot = await getDocs(allTasksQuery);
-      const allTasks = allTasksSnapshot.docs.map(doc => ({ 
+      let allTasks = allTasksSnapshot.docs.map(doc => ({ 
         id: doc.id, 
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate?.() || new Date(),
@@ -288,18 +323,48 @@ const useTasks = (userId) => {
         completedDate: doc.data().completedDate
       }));
 
+      // Advance overdue recurring tasks
+      const batch = writeBatch(db);
+      let needsBatchCommit = false;
+
+      const updatedTasks = allTasks.map(task => {
+        if (!task.completed && task.recurrence !== "None" && task.dueDate < today) {
+          const newDueDate = calculateNextDue(
+            task.dueDate,
+            task.recurrence,
+            task.customInterval,
+            task.customUnit,
+            false
+          );
+          if (newDueDate !== task.dueDate) {
+            const taskRef = doc(db, "tasks", task.id);
+            batch.update(taskRef, {
+              dueDate: newDueDate,
+              updatedAt: serverTimestamp()
+            });
+            needsBatchCommit = true;
+            return { ...task, dueDate: newDueDate };
+          }
+        }
+        return task;
+      });
+
+      if (needsBatchCommit) {
+        await batch.commit();
+      }
+
       const categorizedTasks = {
-        all: allTasks,
-        pending: allTasks.filter(task => 
+        all: updatedTasks,
+        pending: updatedTasks.filter(task => 
           !task.completed && 
           task.dueDate === today
         ),
-        overdue: allTasks.filter(task => 
+        overdue: updatedTasks.filter(task => 
           !task.completed && 
           task.dueDate && 
           task.dueDate < today
         ),
-        history: allTasks.filter(task => task.completed).slice(0, 100)
+        history: updatedTasks.filter(task => task.completed).slice(0, 100)
       };
 
       setTasks(categorizedTasks);
@@ -327,11 +392,11 @@ const useTasks = (userId) => {
     }
   }, [fetchTasks]);
 
-  const deleteTask = useCallback(async (taskId) => {
+  const deleteTask = useCallback(async (task) => {
     try {
-      await deleteDoc(doc(db, "tasks", taskId));
+      await deleteDoc(doc(db, "tasks", task.id));
       await fetchTasks();
-      toast.success("Task deleted successfully");
+      toast.success(task.recurrence !== "None" ? "Recurring task deleted and future recurrences stopped." : "Task deleted successfully.");
       return true;
     } catch (error) {
       console.error("Error deleting task:", error);
@@ -340,12 +405,37 @@ const useTasks = (userId) => {
     }
   }, [fetchTasks]);
 
-  const completeTask = useCallback(async (taskId) => {
-    return await updateTask(taskId, {
+  const completeTask = useCallback(async (task) => {
+    const success = await updateTask(task.id, {
       completed: true,
       completedDate: new Date().toISOString().split('T')[0]
     });
-  }, [updateTask]);
+
+    if (success && task.recurrence !== "None") {
+      try {
+        const nextDue = calculateNextDue(task.dueDate, task.recurrence, task.customInterval, task.customUnit, true);
+        const newTaskData = {
+          ...task,
+          dueDate: nextDue,
+          completed: false,
+          completedDate: null,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        delete newTaskData.id;
+        await addDoc(collection(db, "tasks"), newTaskData);
+        await fetchTasks();
+        toast.success(`Recurring task completed! Next instance created for ${nextDue}.`);
+      } catch (error) {
+        console.error("Error creating next recurring task:", error);
+        toast.error("Failed to create next recurring task.");
+      }
+    } else if (success) {
+      toast.success("Task completed successfully.");
+    }
+
+    return success;
+  }, [updateTask, fetchTasks]);
 
   useEffect(() => {
     if (userId) {
@@ -396,7 +486,7 @@ const validateTask = (task) => {
 };
 
 // Loading Component
-const LoadingSpinner = ({ size = "md", text = "Loading..." }) => {
+const LoadingSpinner = ({ size = "xl", text = "Loading..." }) => {
   const sizeClasses = {
     sm: "w-4 h-4",
     md: "w-6 h-6",
@@ -418,9 +508,9 @@ const TaskCard = ({ task, onComplete, onEdit, onDelete, showActions = true }) =>
 
   const handleComplete = useCallback(async () => {
     setIsUpdating(true);
-    await onComplete(task.id);
+    await onComplete(task);
     setIsUpdating(false);
-  }, [onComplete, task.id]);
+  }, [onComplete, task]);
 
   const isOverdue = task.dueDate && task.dueDate < new Date().toISOString().split('T')[0] && !task.completed;
 
@@ -504,7 +594,7 @@ const TaskCard = ({ task, onComplete, onEdit, onDelete, showActions = true }) =>
                 <Edit3 className="w-4 h-4" />
               </button>
               <button
-                onClick={() => onDelete?.(task.id)}
+                onClick={() => onDelete?.(task)}
                 className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
                 title="Delete task"
               >
@@ -609,12 +699,12 @@ function CreateTask() {
     const errors = validateTask(task);
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
-      toast.error("Please fix the form errors");
+      toast.error("Please fix the form errors.");
       return;
     }
 
     if (!user?.uid) {
-      toast.error("Authentication required");
+      toast.error("Authentication required.");
       return;
     }
 
@@ -631,20 +721,16 @@ function CreateTask() {
         updatedAt: serverTimestamp()
       };
 
-      if (task.recurrence !== "None") {
-        taskData.completions = {};
-      }
-
       if (task.recurrence === "Daily" && !taskData.dueDate) {
         taskData.dueDate = new Date().toISOString().split('T')[0];
       }
 
       if (editingTask) {
         await updateDoc(doc(db, "tasks", editingTask.id), taskData);
-        toast.success("Task updated successfully!");
+        toast.success("Task updated successfully.");
       } else {
         await addDoc(collection(db, "tasks"), taskData);
-        toast.success("Task created successfully!");
+        toast.success("Task created successfully.");
       }
       
       resetForm();
@@ -672,9 +758,9 @@ function CreateTask() {
     setActiveTab("create");
   }, []);
 
-  const handleDelete = useCallback(async (taskId) => {
+  const handleDelete = useCallback(async (task) => {
     if (window.confirm("Are you sure you want to delete this task?")) {
-      await deleteTask(taskId);
+      await deleteTask(task);
     }
   }, [deleteTask]);
 
