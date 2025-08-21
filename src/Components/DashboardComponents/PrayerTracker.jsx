@@ -79,21 +79,18 @@ const PrayerTracker = () => {
     if (loading || !user) return;
     const fetchData = async () => {
       try {
-        // Fetch prayer data
         const prayerCollection = collection(db, 'users', user.uid, 'prayerData');
         const prayerQuery = query(prayerCollection, orderBy('date', 'desc'));
         const prayerSnapshot = await getDocs(prayerQuery);
         const prayerData = prayerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setPrayerData(prayerData);
 
-        // Fetch Quran data
         const quranCollection = collection(db, 'users', user.uid, 'quranData');
         const quranQuery = query(quranCollection, orderBy('date', 'desc'));
         const quranSnapshot = await getDocs(quranQuery);
         const quranData = quranSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setQuranData(quranData);
 
-        // Load data for the selected date
         const todayPrayer = prayerData.find(entry => entry.date === date);
         setPrayers(todayPrayer?.prayers || {
           fajr: { prayed: false, jamaah: false },
@@ -145,7 +142,6 @@ const PrayerTracker = () => {
       const prayerEntry = { date, prayers, timestamp: new Date().toISOString() };
       const quranEntry = { date, ...quran, timestamp: new Date().toISOString() };
 
-      // Update or add prayer data
       const existingPrayer = prayerData.find(entry => entry.date === date);
       if (existingPrayer) {
         await updateDoc(doc(db, 'users', user.uid, 'prayerData', existingPrayer.id), prayerEntry);
@@ -153,7 +149,6 @@ const PrayerTracker = () => {
         await addDoc(prayerCollection, prayerEntry);
       }
 
-      // Update or add Quran data
       const existingQuran = quranData.find(entry => entry.date === date);
       if (existingQuran) {
         await updateDoc(doc(db, 'users', user.uid, 'quranData', existingQuran.id), quranEntry);
@@ -161,7 +156,6 @@ const PrayerTracker = () => {
         await addDoc(quranCollection, quranEntry);
       }
 
-      // Refresh data
       const prayerSnapshot = await getDocs(query(prayerCollection, orderBy('date', 'desc')));
       const quranSnapshot = await getDocs(query(quranCollection, orderBy('date', 'desc')));
       setPrayerData(prayerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -317,25 +311,16 @@ const PrayerTracker = () => {
     );
   }
 
-  return (
-    <div className={`min-h-screen bg-slate-50 transition-all duration-300 ${collapsed ? "lg:ml-20" : "lg:ml-64"}`}>
-      <div className="p-6 md:p-8">
-        <div className="flex flex-col md:flex-row justify-between md:items-center mb-8 gap-4">
-          <h1 className="text-3xl font-bold text-slate-900">Prayer & Quran Tracker</h1>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 text-sm font-semibold rounded-md flex items-center gap-2 transition-colors ${activeTab === 'dashboard' ? 'bg-indigo-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100 border'}`}>
-              <HeartHandshake size={16} /> Dashboard
-            </button>
-            <button onClick={() => setActiveTab('analytics')} className={`px-4 py-2 text-sm font-semibold rounded-md flex items-center gap-2 transition-colors ${activeTab === 'analytics' ? 'bg-indigo-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100 border'}`}>
-              <TrendingUp size={16} /> Analytics
-            </button>
-            <button onClick={() => setActiveTab('history')} className={`px-4 py-2 text-sm font-semibold rounded-md flex items-center gap-2 transition-colors ${activeTab === 'history' ? 'bg-indigo-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100 border'}`}>
-              <History size={16} /> History
-            </button>
-          </div>
-        </div>
+  const TABS = [
+    { id: "dashboard", label: "Dashboard", icon: HeartHandshake },
+    { id: "analytics", label: "Analytics", icon: TrendingUp },
+    { id: "history", label: "History", icon: History }
+  ];
 
-        {activeTab === 'dashboard' && (
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return (
           <div className="space-y-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatCard icon={HeartHandshake} title="Avg Prayers/Day" value={prayerStats.avgPrayers} subValue={`Logged ${prayerStats.totalPrayerDays} days`} color={COLORS.prayer} />
@@ -356,7 +341,7 @@ const PrayerTracker = () => {
                       onChange={(e) => setDate(e.target.value)}
                       min={new Date(new Date().setDate(new Date().getDate() - 6)).toISOString().split('T')[0]}
                       max={new Date().toISOString().split('T')[0]}
-                      className="w-full max-w-xs px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500"
+                      className="w-full max-w-xs px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 sm:max-w-sm md:max-w-md"
                     />
                   </div>
                   <div className="overflow-x-auto">
@@ -468,9 +453,9 @@ const PrayerTracker = () => {
               </div>
             </div>
           </div>
-        )}
-
-        {activeTab === 'analytics' && (
+        );
+      case 'analytics':
+        return (
           <div className="space-y-8">
             <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between md:items-center gap-4">
               <h2 className="text-xl font-bold text-slate-800 flex items-center"><TrendingUp className="mr-3 text-indigo-500" />Analytics</h2>
@@ -537,9 +522,9 @@ const PrayerTracker = () => {
               </div>
             </div>
           </div>
-        )}
-
-        {activeTab === 'history' && (
+        );
+      case 'history':
+        return (
           <div className="space-y-8">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
               <h3 className="text-lg font-semibold text-slate-800 mb-4">History</h3>
@@ -566,7 +551,45 @@ const PrayerTracker = () => {
               </div>
             </div>
           </div>
-        )}
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className={`min-h-screen bg-slate-50 transition-all duration-300 ${collapsed ? "lg:ml-20" : "lg:ml-64"}`}>
+      <div className="p-6 md:p-8">
+        {/* Tab Navigation */}
+        <div className="mb-4 md:mb-2 relative">
+          <div className="border-b border-slate-200 bg-white rounded-t-xl shadow-sm">
+            <nav className="-mb-px flex overflow-x-auto px-3 md:px-6 relative">
+              {TABS.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 py-3 md:py-4 px-2 md:px-4 text-xs md:text-sm font-medium border-b-2 transition-colors duration-200 whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? 'border-indigo-500 text-indigo-600'
+                        : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="hidden xs:inline">{tab.label}</span>
+                    <span className="xs:hidden">{tab.label.split(' ')[0]}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="transition-all duration-300">
+          {renderTabContent()}
+        </div>
 
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
