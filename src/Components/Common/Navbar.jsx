@@ -184,7 +184,7 @@ export default function Navbar() {
               {/* CTA Button */}
               <div className="px-6 py-6 border-t border-slate-700/50 bg-slate-800/30">
                 <a
-                  href="#get-started"
+                  href="/signin"
                   className="group relative flex items-center justify-center gap-3 w-full px-6 py-4 text-base font-semibold text-white bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-600 rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5"
                   onClick={handleNavClick}
                 >
