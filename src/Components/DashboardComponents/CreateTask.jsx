@@ -1324,7 +1324,7 @@ function CreateTask() {
     } px-4 py-1 lg:px-8`}>
       <div className="max-w-7xl mx-auto">
         {/* Tab Navigation */}
-        <div className="mb-4 md:mb-2">
+        <div className="mb-2 md:mb-2">
           <div className="border-b border-slate-200 bg-white rounded-t-xl shadow-sm">
             <nav className="-mb-px grid grid-cols-3 gap-0 sm:flex sm:flex-wrap sm:overflow-x-auto px-2 sm:px-4 md:px-6">
               {TABS.map((tab) => {

@@ -321,7 +321,7 @@ const PrayerTracker = () => {
     switch (activeTab) {
       case 'dashboard':
         return (
-          <div className="space-y-8">
+          <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatCard icon={HeartHandshake} title="Avg Prayers/Day" value={prayerStats.avgPrayers} subValue={`Logged ${prayerStats.totalPrayerDays} days`} color={COLORS.prayer} />
               <StatCard icon={HeartHandshake} title="Avg Jama'ah/Day" value={prayerStats.avgJamaah} subValue={`${prayerStats.jamaahPercent}% of prayed`} color={COLORS.jamaah} />
@@ -559,9 +559,9 @@ const PrayerTracker = () => {
 
   return (
     <div className={`min-h-screen bg-slate-50 transition-all duration-300 ${collapsed ? "lg:ml-20" : "lg:ml-64"}`}>
-      <div className="p-6 md:p-8">
+      <div className="p-3 md:p-8">
         {/* Tab Navigation */}
-        <div className="mb-4 md:mb-2 relative">
+        <div className="mb-2 md:mb-2 relative">
           <div className="border-b border-slate-200 bg-white rounded-t-xl shadow-sm">
             <nav className="-mb-px flex overflow-x-auto px-3 md:px-6 relative">
               {TABS.map((tab) => {
