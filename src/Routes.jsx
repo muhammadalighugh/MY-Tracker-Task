@@ -15,7 +15,7 @@ import MobileTracker from "./Components/DasbhoardComponenets/Mobile";
 import ExpenseTracker from "./Components/DasbhoardComponenets/ExpenseTracker";
 import CreateTask from "./Components/DasbhoardComponenets/CreateTask";
 // import CardMain from "./Components/CardsCreator/card"; 
-import { ProtectedRoute } from "./components/ProtectedRoute"; // Adjust path if needed
+import ProtectedRoute  from "./components/ProtectedRoute"; 
 import Notes from "./Components/DasbhoardComponenets/Notes";
 import  CardMain from './Components/CardsCreator/card';
 // import  CardView from './Components/CardsCreator/card';
