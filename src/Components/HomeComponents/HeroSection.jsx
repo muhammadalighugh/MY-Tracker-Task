@@ -1,5 +1,5 @@
 import React,{ useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ArrowRight, Target, TrendingUp, CheckCircle, Calendar, Activity, BarChart3, Zap, Star } from 'lucide-react';
+import { ArrowRight, Flag , TrendingUp, CheckCircle, Calendar, Activity, BarChart3, Zap, Star } from 'lucide-react';
 import { Link } from "react-router-dom";
 
 // Custom hook for window size
@@ -181,19 +181,18 @@ export default function HeroSection() {
   ], []);
 
   const progressData = useMemo(() => [
-    { label: 'Daily Goals', progress: 85, color: 'bg-emerald-500', shadowColor: 'shadow-emerald-500/50', icon: Target },
+    { label: 'Daily Goals', progress: 85, color: 'bg-emerald-500', shadowColor: 'shadow-emerald-500/50', icon: Flag },
     { label: 'Weekly Tasks', progress: 72, color: 'bg-blue-500', shadowColor: 'shadow-blue-500/50', icon: Calendar },
     { label: 'Monthly Target', progress: 94, color: 'bg-purple-500', shadowColor: 'shadow-purple-500/50', icon: TrendingUp },
     { label: 'Yearly Vision', progress: 68, color: 'bg-orange-500', shadowColor: 'shadow-orange-500/50', icon: Star }
   ], []);
 
   const floatingElements = useMemo(() => [
-    { icon: Target, delay: 0, color: 'text-emerald-400', position: 'top-4 right-4' },
+    { icon: Flag , delay: 0, color: 'text-emerald-400', position: 'top-4 right-4' },
     { icon: TrendingUp, delay: 0.2, color: 'text-blue-400', position: 'top-20 -right-4' },
     { icon: CheckCircle, delay: 0.4, color: 'text-purple-400', position: 'top-36 right-8' },
     { icon: Calendar, delay: 0.6, color: 'text-orange-400', position: 'top-52 -right-2' },
     { icon: Activity, delay: 0.8, color: 'text-pink-400', position: 'bottom-20 -left-4' },
-    { icon: BarChart3, delay: 1.0, color: 'text-cyan-400', position: 'bottom-36 left-8' },
   ], []);
 
   const chartData = useMemo(() =>
