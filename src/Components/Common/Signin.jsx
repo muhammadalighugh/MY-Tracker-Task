@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import React,  { useState, useEffect, useCallback, useRef } from 'react'
 import { Mail, Lock } from 'lucide-react'
 import { FaGoogle } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
@@ -12,6 +12,45 @@ import {
 } from 'firebase/auth'
 import { auth } from '../../firebase/firebase.config'
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // You can log errors to an error reporting service here
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+          <div className="bg-gray-800 p-8 rounded-lg shadow-lg max-w-md w-full text-center">
+            <h2 className="text-2xl font-bold text-white mb-4">Something went wrong</h2>
+            <p className="text-gray-300 mb-6">
+              Please try refreshing the page or disable any browser extensions that might be interfering.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 // Security configuration
 const SECURITY_CONFIG = {
   PASSWORD_MIN_LENGTH: 8,
@@ -20,7 +59,7 @@ const SECURITY_CONFIG = {
   LOCKOUT_TIME: 15 * 60 * 1000 // 15 minutes
 }
 
-export default function Signin() {
+function Signin() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -427,5 +466,14 @@ export default function Signin() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Wrap the component with Error Boundary
+export default function SigninWithErrorBoundary() {
+  return (
+    <ErrorBoundary>
+      <Signin />
+    </ErrorBoundary>
   )
 }
