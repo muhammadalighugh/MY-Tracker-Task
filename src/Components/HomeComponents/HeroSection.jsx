@@ -129,13 +129,6 @@ const FloatingElements = React.memo(({ elements, isVisible }) => {
   );
 });
 
-// Memoized Chart Visualization
-// const ChartVisualization = React.memo(({ data }) => {
-//   return (
-//    <></>
-//   );
-// });
-
 // Main Component
 export default function HeroSection() {
   const [isVisible, setIsVisible] = useState(false);
@@ -201,8 +194,6 @@ export default function HeroSection() {
     { icon: Calendar, delay: 0.6, color: 'text-orange-400', position: 'top-52 -right-2' },
     { icon: Activity, delay: 0.8, color: 'text-pink-400', position: 'bottom-20 -left-4' },
     { icon: BarChart3, delay: 1.0, color: 'text-cyan-400', position: 'bottom-36 left-8' },
-    { icon: Zap, delay: 1.2, color: 'text-yellow-400', position: 'bottom-4 left-4' },
-    { icon: Star, delay: 1.4, color: 'text-rose-400', position: 'top-1/2 -left-6' }
   ], []);
 
   const chartData = useMemo(() =>
