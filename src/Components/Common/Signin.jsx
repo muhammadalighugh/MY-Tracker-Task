@@ -309,7 +309,7 @@ export default function Signin() {
           <div id="recaptcha-container" ref={recaptchaContainer} className="hidden"></div>
 
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold">Secure Sign In</h2>
+            <h2 className="text-3xl font-bold">Sign In</h2>
             <p className="mt-2 text-gray-400">
               Don't have an account?{' '}
               <a href="/signup" className="text-blue-500 hover:text-blue-400">
