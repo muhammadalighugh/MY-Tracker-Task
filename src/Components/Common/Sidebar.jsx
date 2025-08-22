@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useSidebar } from "../../context/SidebarContext";
 import { AuthContext } from "../../context/AuthContext";
@@ -7,38 +7,11 @@ import { auth, db } from "../../firebase/firebase.config";
 import { toast } from "react-toastify";
 import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  X,
-  Home,
-  HeartHandshake,
-  Code,
-  Dumbbell,
-  BookOpen,
-  Carrot,
-  Smartphone,
-  CircleDollarSign,
-  ListTodo,
-  IdCardLanyard,
-  NotebookPen,
-  LogOut,
+  ChevronLeft, ChevronRight, ChevronDown, ChevronUp, X, Home, HeartHandshake, Code, Dumbbell, BookOpen, Carrot, Smartphone, CircleDollarSign, ListTodo, IdCardLanyard, NotebookPen, LogOut,
 } from "lucide-react";
 
 const ICON_MAP = {
-  HeartHandshake,
-  Code,
-  Dumbbell,
-  BookOpen,
-  CircleDollarSign,
-  Carrot,
-  Smartphone,
-  Home,
-  ListTodo,
-  NotebookPen,
-  IdCardLanyard,
-  LogOut,
+  HeartHandshake, Code, Dumbbell, BookOpen, CircleDollarSign, Carrot, Smartphone, Home, ListTodo, NotebookPen, IdCardLanyard, LogOut,
 };
 
 const PREDEFINED_TRACKERS = [
@@ -51,12 +24,9 @@ const PREDEFINED_TRACKERS = [
   { id: 7, name: "Mobile Tracker", path: "/dashboard/mobile", iconName: "Smartphone", color: "#EC4899" },
 ];
 
-function SidebarLink({ to, iconName, text, collapsed, isAccessible, color, isDashboard, isPremium }) {
+const SidebarLink = React.memo(function SidebarLink({ to, iconName, text, collapsed, isAccessible, color, isDashboard, isPremium }) {
   const Icon = ICON_MAP[iconName];
-  if (!Icon) {
-    console.error(`Invalid iconName: ${iconName}`);
-    return null;
-  }
+  if (!Icon) return null;
 
   if (isDashboard) {
     return (
@@ -130,7 +100,7 @@ function SidebarLink({ to, iconName, text, collapsed, isAccessible, color, isDas
       )}
     </div>
   );
-}
+});
 
 export default function Sidebar() {
   const { sidebarOpen, setSidebarOpen, collapsed, setCollapsed, activeTrackers, trackersExpanded, setTrackersExpanded, customTrackers } = useSidebar();
@@ -166,7 +136,7 @@ export default function Sidebar() {
   const firstName = displayName.split(" ")[0];
   const avatarLetter = firstName.charAt(0).toUpperCase();
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     signOut(auth)
       .then(() => {
         toast.success("Logged out successfully!");
@@ -175,10 +145,10 @@ export default function Sidebar() {
       .catch((error) => {
         toast.error(`Logout failed: ${error.message}`);
       });
-  };
+  }, [navigate]);
 
-  const allTrackers = [...PREDEFINED_TRACKERS, ...customTrackers];
-  const freeTrackerIds = [1, 6];
+  const allTrackers = useMemo(() => [...PREDEFINED_TRACKERS, ...customTrackers], [customTrackers]);
+  const freeTrackerIds = useMemo(() => [1, 6], []);
 
   return (
     <>
@@ -188,7 +158,6 @@ export default function Sidebar() {
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
       <div
         className={`fixed inset-y-0 left-0 z-50 bg-white border-r border-slate-200 shadow-sm transform transition-all duration-300 ease-in-out ${
           collapsed ? "w-20" : "w-64"
@@ -213,7 +182,6 @@ export default function Sidebar() {
             </button>
           </div>
         </div>
-
         {/* User Info with Alphabetic Avatar */}
         <NavLink
           to="/dashboard/profile"
@@ -231,7 +199,6 @@ export default function Sidebar() {
             </div>
           )}
         </NavLink>
-
         {/* Upgrade to Pro Button */}
         {!isPremium && (
           <div className={`${collapsed ? "flex justify-center" : "px-3"} mt-2`}>
@@ -243,7 +210,6 @@ export default function Sidebar() {
             </button>
           </div>
         )}
-
         {/* Main Navigation */}
         <nav className="mt-2">
           <SidebarLink
@@ -272,7 +238,6 @@ export default function Sidebar() {
             color="#059669"
           />
         </nav>
-
         {/* Tracker Section */}
         <div className="mt-1">
           <button
@@ -288,7 +253,6 @@ export default function Sidebar() {
               </>
             )}
           </button>
-
           {trackersExpanded && (
             <div className="mt-1 space-y-0">
               {allTrackers.length === 0 || activeTrackers.length === 0 ? (
@@ -311,7 +275,6 @@ export default function Sidebar() {
             </div>
           )}
         </div>
-
         {/* My Subscription/View Plans */}
         <div className="mt-2">
           <SidebarLink
@@ -324,7 +287,6 @@ export default function Sidebar() {
             isPremium={isPremium}
           />
         </div>
-
         {/* Logout Button */}
         <div className={`${collapsed ? "flex justify-center" : "px-3"} mt-3 mb-3`}>
           <button

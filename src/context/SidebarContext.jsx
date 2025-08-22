@@ -1,29 +1,72 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 const SidebarContext = createContext();
 
 export function SidebarProvider({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [activeTrackers, setActiveTrackers] = useState([1]); // Only Prayer Tracker active by default
   const [trackersExpanded, setTrackersExpanded] = useState(true);
-  const [customTrackers, setCustomTrackers] = useState([]);
+
+  // Memoized initial state for activeTrackers and customTrackers
+  const [activeTrackers, setActiveTrackers] = useState(() => {
+    try {
+      const saved = localStorage.getItem('activeTrackers');
+      return saved ? JSON.parse(saved) : [1];
+    } catch (e) {
+      return [1];
+    }
+  });
+  const [customTrackers, setCustomTrackers] = useState(() => {
+    try {
+      const saved = localStorage.getItem('customTrackers');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  // Memoized handlers to prevent unnecessary re-renders
+  const setActiveTrackersMemoized = useCallback((newTrackers) => {
+    setActiveTrackers(newTrackers);
+  }, []);
+
+  const setCustomTrackersMemoized = useCallback((newTrackers) => {
+    setCustomTrackers(newTrackers);
+  }, []);
+
+  // Save to localStorage only when dependencies change
+  useEffect(() => {
+    localStorage.setItem('activeTrackers', JSON.stringify(activeTrackers));
+  }, [activeTrackers]);
+
+  useEffect(() => {
+    localStorage.setItem('customTrackers', JSON.stringify(customTrackers));
+  }, [customTrackers]);
+
+  // Memoized context value
+  const contextValue = useMemo(() => ({
+    sidebarOpen,
+    setSidebarOpen,
+    collapsed,
+    setCollapsed,
+    activeTrackers,
+    setActiveTrackers: setActiveTrackersMemoized,
+    trackersExpanded,
+    setTrackersExpanded,
+    customTrackers,
+    setCustomTrackers: setCustomTrackersMemoized,
+  }), [
+    sidebarOpen,
+    collapsed,
+    activeTrackers,
+    trackersExpanded,
+    customTrackers,
+    setActiveTrackersMemoized,
+    setCustomTrackersMemoized,
+  ]);
 
   return (
-    <SidebarContext.Provider
-      value={{
-        sidebarOpen,
-        setSidebarOpen,
-        collapsed,
-        setCollapsed,
-        activeTrackers,
-        setActiveTrackers,
-        trackersExpanded,
-        setTrackersExpanded,
-        customTrackers,
-        setCustomTrackers
-      }}
-    >
+    <SidebarContext.Provider value={contextValue}>
       {children}
     </SidebarContext.Provider>
   );
