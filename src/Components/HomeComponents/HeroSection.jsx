@@ -130,48 +130,11 @@ const FloatingElements = React.memo(({ elements, isVisible }) => {
 });
 
 // Memoized Chart Visualization
-const ChartVisualization = React.memo(({ data }) => {
-  return (
-    <div className="relative h-20 sm:h-24 md:h-28 bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-purple-500/10 rounded-lg sm:rounded-xl border border-slate-600/30 flex items-end justify-between p-2 sm:p-3 overflow-hidden group-hover:from-emerald-500/20 group-hover:via-blue-500/20 group-hover:to-purple-500/20 transition-all duration-500">
-      <div className="absolute inset-0 opacity-20">
-        {Array.from({length: 4}).map((_, i) => (
-          <div key={i} className="absolute w-full border-t border-gray-600" style={{bottom: `${25 * i}%`}} />
-        ))}
-      </div>
-
-      {data.map((bar, i) => (
-        <div key={i} className="relative group/bar cursor-pointer">
-          <div
-            className="bg-gradient-to-t from-emerald-400 via-blue-500 to-purple-500 rounded-t-sm transition-all duration-1000 hover:scale-110 hover:shadow-lg hover:shadow-blue-500/50"
-            style={{
-              width: '4px',
-              height: `${bar.height}%`,
-              animationDelay: `${i * 0.1}s`
-            }}
-          />
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap">
-            {bar.value}%
-          </div>
-        </div>
-      ))}
-
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {Array.from({length: 3}).map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-1 bg-emerald-400 rounded-full animate-ping"
-            style={{
-              left: `${20 + (i * 30)}%`,
-              bottom: `${30 + (i * 10)}%`,
-              animationDelay: `${i * 1.5}s`,
-              animationDuration: '3s'
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-});
+// const ChartVisualization = React.memo(({ data }) => {
+//   return (
+//    <></>
+//   );
+// });
 
 // Main Component
 export default function HeroSection() {
@@ -349,7 +312,7 @@ export default function HeroSection() {
               setHoveredProgress={setHoveredProgress}
             />
 
-            <ChartVisualization data={chartData} />
+            {/* <ChartVisualization data={chartData} /> */}
 
             {/* Stats Row */}
             <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-4 sm:mt-6">
