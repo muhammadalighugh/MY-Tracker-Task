@@ -1,139 +1,315 @@
-import { useState } from 'react';
-import { Mail, Lock } from 'lucide-react';
-import { FaGoogle } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from '../../firebase/firebase.config';
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Mail, Lock } from 'lucide-react'
+import { FaGoogle } from 'react-icons/fa'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'react-toastify'
+import {
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  getAuth,
+  onAuthStateChanged
+} from 'firebase/auth'
+import { auth } from '../../firebase/firebase.config'
+import { RecaptchaVerifier } from 'firebase/auth'
+
+// Security configuration
+const SECURITY_CONFIG = {
+  PASSWORD_MIN_LENGTH: 8,
+  EMAIL_REGEX: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+  MAX_FAILED_ATTEMPTS: 5,
+  LOCKOUT_TIME: 15 * 60 * 1000 // 15 minutes
+}
 
 export default function Signin() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-  });
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  })
+  const [loading, setLoading] = useState(false)
+  const [failedAttempts, setFailedAttempts] = useState(0)
+  const [lastAttemptTime, setLastAttemptTime] = useState(0)
+  const [isLocked, setIsLocked] = useState(false)
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState(null)
+  const [authReady, setAuthReady] = useState(false)
+  const navigate = useNavigate()
+  const recaptchaContainer = useRef(null)
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  // Initialize Firebase Auth and reCAPTCHA
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        // Verify auth is properly initialized
+        if (!auth || !auth.app) {
+          throw new Error('Firebase not initialized')
+        }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+        // Set up reCAPTCHA
+        if (window && !recaptchaVerifier) {
+          const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'normal',
+            'callback': () => {},
+            'expired-callback': () => {}
+          })
+          setRecaptchaVerifier(verifier)
+        }
+
+        setAuthReady(true)
+      } catch (error) {
+        console.error('Auth initialization error:', error)
+        toast.error('Authentication service unavailable. Please try again later.')
+      }
+    }
+
+    initializeAuth()
+
+    // Check auth state for redirect
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        navigate('/dashboard')
+      }
+    })
+
+    return () => {
+      unsubscribe()
+      if (recaptchaVerifier) {
+        try {
+          recaptchaVerifier.clear()
+        } catch (e) {
+          console.error('Error clearing reCAPTCHA:', e)
+        }
+      }
+    }
+  }, [])
+
+  // Check lockout status
+  useEffect(() => {
+    if (failedAttempts >= SECURITY_CONFIG.MAX_FAILED_ATTEMPTS) {
+      const timeSinceLastAttempt = Date.now() - lastAttemptTime
+      if (timeSinceLastAttempt < SECURITY_CONFIG.LOCKOUT_TIME) {
+        setIsLocked(true)
+      } else {
+        setIsLocked(false)
+        setFailedAttempts(0)
+      }
+    }
+  }, [failedAttempts, lastAttemptTime])
+
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }, [])
+
+  const validatePassword = (password) => {
+    if (password.length < SECURITY_CONFIG.PASSWORD_MIN_LENGTH) return false
+    if (!/[A-Z]/.test(password)) return false
+    if (!/[0-9]/.test(password)) return false
+    if (!/[^A-Za-z0-9]/.test(password)) return false
+    return true
+  }
+
+  const validateEmail = (email) => {
+    return SECURITY_CONFIG.EMAIL_REGEX.test(email)
+  }
+
+  const handleSubmit = useCallback(async (e) => {
+    e.preventDefault()
+
+    if (isLocked) {
+      toast.error('Account temporarily locked due to too many failed attempts.')
+      return
+    }
 
     if (!formData.email || !formData.password) {
-      toast.error('Please fill in all fields');
-      setLoading(false);
-      return;
+      toast.error('Please fill in all fields')
+      return
     }
 
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
-      const user = userCredential.user;
+    if (!validateEmail(formData.email)) {
+      toast.error('Please enter a valid email address')
+      return
+    }
 
-      // Check if email is verified
-      if (user.emailVerified) {
-        toast.success('Successfully signed in! Redirecting...');
-        setTimeout(() => navigate('/dashboard'), 1500);
-      } else {
-        await auth.signOut();
-        toast.error('Please verify your email before signing in.');
-        setTimeout(() => navigate('/verify-email'), 1500);
+    if (!validatePassword(formData.password)) {
+      toast.error('Password must be at least 8 characters with uppercase, number, and special character')
+      return
+    }
+
+    if (!authReady) {
+      toast.error('Authentication service not ready. Please try again.')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      // Verify reCAPTCHA is ready
+      if (!recaptchaVerifier) {
+        throw new Error('Security verification required')
       }
+
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      )
+
+      const user = userCredential.user
+
+      if (!user.emailVerified) {
+        await signOut(auth)
+        toast.error('Please verify your email before signing in.')
+        setTimeout(() => navigate('/verify-email'), 1500)
+        return
+      }
+
+      toast.success('Successfully signed in! Redirecting...')
+      setTimeout(() => navigate('/dashboard'), 1500)
+      setFailedAttempts(0)
+
     } catch (error) {
-      let errorMessage = 'An error occurred during sign in';
-      
+      console.error('Login error:', error)
+      setFailedAttempts(prev => prev + 1)
+      setLastAttemptTime(Date.now())
+
+      let errorMessage = 'Sign in failed. Please try again.'
+
       switch (error.code) {
         case 'auth/invalid-email':
-          errorMessage = 'Invalid email address';
-          break;
+          errorMessage = 'Invalid email format'
+          break
         case 'auth/user-disabled':
-          errorMessage = 'This account has been disabled';
-          break;
+          errorMessage = 'Account disabled'
+          break
         case 'auth/user-not-found':
-          errorMessage = 'No account found with this email';
-          break;
         case 'auth/wrong-password':
-          errorMessage = 'Incorrect password';
-          break;
+          errorMessage = 'Invalid email or password'
+          break
         case 'auth/too-many-requests':
-          errorMessage = 'Too many attempts. Account temporarily locked';
-          break;
+          errorMessage = 'Too many attempts. Please try again later.'
+          break
+        case 'auth/network-request-failed':
+          errorMessage = 'Network error. Please check your connection.'
+          break
+        case 'auth/internal-error':
+          errorMessage = 'Authentication service error. Please refresh and try again.'
+          break
         default:
-          errorMessage = error.message;
+          errorMessage = 'Sign in failed. Please try again.'
       }
-      
-      toast.error(errorMessage);
+
+      toast.error(errorMessage)
+      setFormData(prev => ({ ...prev, password: '' }))
+
+      // Reset reCAPTCHA
+      if (recaptchaVerifier) {
+        try {
+          recaptchaVerifier.clear()
+          const newVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible'
+          })
+          setRecaptchaVerifier(newVerifier)
+        } catch (e) {
+          console.error('reCAPTCHA reset failed:', e)
+        }
+      }
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }, [formData, navigate, recaptchaVerifier, authReady, isLocked, failedAttempts])
 
-  const handleGoogleSignin = async () => {
-    setLoading(true);
+  const handleGoogleSignin = useCallback(async () => {
+    if (isLocked) {
+      toast.error('Account temporarily locked due to too many failed attempts.')
+      return
+    }
+
+    if (!authReady) {
+      toast.error('Authentication service not ready. Please try again.')
+      return
+    }
+
+    setLoading(true)
+
     try {
-      const provider = new GoogleAuthProvider();
-      const userCredential = await signInWithPopup(auth, provider);
-      const user = userCredential.user;
+      const provider = new GoogleAuthProvider()
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      })
 
-      // Check if email is verified (Google accounts are typically verified)
-      if (user.emailVerified) {
-        toast.success('Successfully signed in with Google! Redirecting...');
-        setTimeout(() => navigate('/dashboard'), 1500);
-      } else {
-        await auth.signOut();
-        toast.error('Please verify your email before signing in.');
-        setTimeout(() => navigate('/verify-email'), 1500);
+      // Use signInWithRedirect as fallback if popup is blocked
+      try {
+        const result = await signInWithPopup(auth, provider)
+        toast.success('Successfully signed in with Google!')
+        setTimeout(() => navigate('/dashboard'), 1500)
+      } catch (error) {
+        console.error('Google sign-in error:', error)
+
+        if (error.code === 'auth/popup-closed-by-user') {
+          toast.error('Google sign in was cancelled')
+        } else if (error.code === 'auth/popup-blocked') {
+          toast.error('Popup blocked. Please allow popups for this site.')
+        } else if (error.code === 'auth/network-request-failed') {
+          toast.error('Network error. Please check your connection.')
+        } else {
+          toast.error('Google sign in failed. Please try again.')
+        }
       }
     } catch (error) {
-      let errorMessage = 'An error occurred during Google sign in';
-      
-      if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = 'Sign in popup was closed';
-      } else if (error.code === 'auth/cancelled-popup-request') {
-        errorMessage = 'Sign in cancelled';
-      }
-      
-      toast.error(errorMessage);
+      console.error('Google sign-in initialization error:', error)
+      toast.error('Google sign in failed. Please try again.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }, [navigate, isLocked, authReady])
+
+  const getPasswordStrength = (password) => {
+    if (password.length === 0) return 0
+    let strength = Math.min(password.length / 2, 2)
+
+    if (/[A-Z]/.test(password)) strength += 1
+    if (/[0-9]/.test(password)) strength += 1
+    if (/[^A-Za-z0-9]/.test(password)) strength += 1
+
+    return Math.min(strength, 5)
+  }
+
+  const passwordStrength = getPasswordStrength(formData.password)
+  const strengthColor = passwordStrength < 2 ? 'bg-red-500' :
+                       passwordStrength < 4 ? 'bg-yellow-500' : 'bg-green-500'
 
   return (
     <div className="relative isolate min-h-screen bg-black text-white overflow-hidden">
-      {/* Dynamic Background with Mouse Interaction */}
-      <div 
-        className="fixed inset-0 opacity-30 transition-all duration-700 ease-out pointer-events-none"
-        style={{
-          background: `radial-gradient(circle at 50% 50%, 
-            rgba(16, 185, 129, 0.15) 0%, 
-            rgba(59, 130, 246, 0.10) 35%, 
-            rgba(147, 51, 234, 0.05) 70%, 
-            transparent 100%)`
-        }}
-      />
+      {/* Security background */}
+      <div className="fixed inset-0 opacity-30 transition-all duration-700 ease-out pointer-events-none"
+           style={{
+             background: `radial-gradient(circle at 50% 50%,
+               rgba(16, 185, 129, 0.15) 0%,
+               rgba(59, 130, 246, 0.10) 35%,
+               rgba(147, 51, 234, 0.05) 70%,
+               transparent 100%)`
+           }} />
 
-      {/* Animated Background Orbs */}
+      {/* Background elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-48 sm:w-64 md:w-80 lg:w-96 h-48 sm:h-64 md:h-80 lg:h-96 bg-emerald-500/20 rounded-full blur-3xl animate-pulse" 
+        <div className="absolute top-1/4 left-1/4 w-48 sm:w-64 md:w-80 lg:w-96 h-48 sm:h-64 md:h-80 lg:h-96 bg-emerald-500/20 rounded-full blur-3xl animate-pulse"
              style={{ animationDelay: '0s', animationDuration: '4s' }} />
-        <div className="absolute top-3/4 right-1/4 w-40 sm:w-56 md:w-72 lg:w-80 h-40 sm:h-56 md:h-72 lg:h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse" 
+        <div className="absolute top-3/4 right-1/4 w-40 sm:w-56 md:w-72 lg:w-80 h-40 sm:h-56 md:h-72 lg:h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse"
              style={{ animationDelay: '2s', animationDuration: '6s' }} />
-        <div className="absolute bottom-1/4 left-1/3 w-32 sm:w-48 md:w-56  h-32 sm:h-48 md:h-56 lg:h-64 bg-purple-500/20 rounded-full blur-3xl animate-pulse" 
+        <div className="absolute bottom-1/4 left-1/3 w-32 sm:w-48 md:w-56 h-32 sm:h-48 md:h-56 lg:h-64 bg-purple-500/20 rounded-full blur-3xl animate-pulse"
              style={{ animationDelay: '1s', animationDuration: '5s' }} />
       </div>
 
-      {/* Grid Pattern Overlay */}
       <div className="fixed inset-0 bg-[linear-gradient(rgba(16,185,129,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.03)_1px,transparent_1px)] bg-[size:2rem_2rem] sm:bg-[size:3rem_3rem] lg:bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000,transparent)] pointer-events-none" />
 
-      {/* Content with relative positioning */}
       <div className="relative z-10 flex items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md bg-gray-900/80 backdrop-blur-sm rounded-xl border border-gray-800 p-8">
+        <div className="w-full max-w-md bg-gray-900/80 backdrop-blur-sm rounded-xl border border-gray-800 p-8 shadow-2xl">
+          {/* reCAPTCHA container (hidden) */}
+          <div id="recaptcha-container" ref={recaptchaContainer} className="hidden"></div>
+
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold">Welcome back</h2>
+            <h2 className="text-3xl font-bold">Secure Sign In</h2>
             <p className="mt-2 text-gray-400">
               Don't have an account?{' '}
               <a href="/signup" className="text-blue-500 hover:text-blue-400">
@@ -142,11 +318,10 @@ export default function Signin() {
             </p>
           </div>
 
-          {/* Social Login Button (Google only) */}
           <div className="mb-6">
-            <button 
+            <button
               onClick={handleGoogleSignin}
-              disabled={loading}
+              disabled={loading || isLocked || !authReady}
               className="w-full flex items-center justify-center py-2 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
@@ -160,7 +335,7 @@ export default function Signin() {
               ) : (
                 <>
                   <FaGoogle className="mr-2" size={18} />
-                  Google
+                  Sign in with Google
                 </>
               )}
             </button>
@@ -172,7 +347,6 @@ export default function Signin() {
             <div className="flex-grow border-t border-gray-700"></div>
           </div>
 
-          {/* Signin Form */}
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
@@ -186,12 +360,13 @@ export default function Signin() {
                   id="email"
                   name="email"
                   type="email"
+                  autoComplete="username"
                   required
                   value={formData.email}
                   onChange={handleChange}
                   className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="you@example.com"
-                  disabled={loading}
+                  disabled={loading || isLocked || !authReady}
                 />
               </div>
             </div>
@@ -208,14 +383,30 @@ export default function Signin() {
                   id="password"
                   name="password"
                   type="password"
+                  autoComplete="current-password"
                   required
                   value={formData.password}
                   onChange={handleChange}
                   className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="••••••••"
-                  disabled={loading}
+                  disabled={loading || isLocked || !authReady}
                 />
               </div>
+
+              {formData.password && (
+                <div className="mt-2">
+                  <div className="flex justify-between text-xs text-gray-400 mb-1">
+                    <span>Password strength</span>
+                    <span>{passwordStrength}/5</span>
+                  </div>
+                  <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${strengthColor} transition-all duration-300`}
+                      style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between">
@@ -225,13 +416,12 @@ export default function Signin() {
                   name="remember-me"
                   type="checkbox"
                   className="h-4 w-4 text-blue-600 bg-gray-800 border-gray-700 rounded focus:ring-blue-500"
-                  disabled={loading}
+                  disabled={loading || isLocked || !authReady}
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-400">
                   Remember me
                 </label>
               </div>
-
               <div className="text-sm">
                 <a href="/forgot-password" className="text-blue-500 hover:text-blue-400">
                   Forgot password?
@@ -241,7 +431,7 @@ export default function Signin() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || isLocked || !authReady}
               className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
             >
               {loading ? (
@@ -256,9 +446,26 @@ export default function Signin() {
                 'Sign in'
               )}
             </button>
+
+            {isLocked && (
+              <div className="mt-4 p-3 bg-yellow-900/30 rounded-lg text-yellow-200 text-sm text-center">
+                Account temporarily locked due to too many failed attempts. Please try again later.
+              </div>
+            )}
+
+            {!authReady && (
+              <div className="mt-4 p-3 bg-blue-900/30 rounded-lg text-blue-200 text-sm text-center">
+                Initializing authentication service...
+              </div>
+            )}
           </form>
+
+          <div className="mt-8 text-center text-xs text-gray-500">
+            <p>We use industry-standard encryption to protect your data.</p>
+            <p className="mt-1">Never share your password with anyone.</p>
+          </div>
         </div>
       </div>
     </div>
-  );
+  )
 }
