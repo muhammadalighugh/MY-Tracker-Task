@@ -8,11 +8,9 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  getAuth,
   onAuthStateChanged
 } from 'firebase/auth'
 import { auth } from '../../firebase/firebase.config'
-import { RecaptchaVerifier } from 'firebase/auth'
 
 // Security configuration
 const SECURITY_CONFIG = {
@@ -31,33 +29,21 @@ export default function Signin() {
   const [failedAttempts, setFailedAttempts] = useState(0)
   const [lastAttemptTime, setLastAttemptTime] = useState(0)
   const [isLocked, setIsLocked] = useState(false)
-  const [recaptchaVerifier, setRecaptchaVerifier] = useState(null)
   const [authReady, setAuthReady] = useState(false)
   const navigate = useNavigate()
-  const recaptchaContainer = useRef(null)
 
-  // Initialize Firebase Auth and reCAPTCHA
+  // Initialize Firebase Auth
   useEffect(() => {
     const initializeAuth = async () => {
       try {
         // Verify auth is properly initialized
         if (!auth || !auth.app) {
-          throw new Error('Firebase not initialized')
-        }
-
-        // Set up reCAPTCHA
-        if (window && !recaptchaVerifier) {
-          const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            'size': 'normal',
-            'callback': () => {},
-            'expired-callback': () => {}
-          })
-          setRecaptchaVerifier(verifier)
+          toast.error('Authentication service unavailable. Please try again later.')
+          return
         }
 
         setAuthReady(true)
       } catch (error) {
-        console.error('Auth initialization error:', error)
         toast.error('Authentication service unavailable. Please try again later.')
       }
     }
@@ -71,16 +57,7 @@ export default function Signin() {
       }
     })
 
-    return () => {
-      unsubscribe()
-      if (recaptchaVerifier) {
-        try {
-          recaptchaVerifier.clear()
-        } catch (e) {
-          console.error('Error clearing reCAPTCHA:', e)
-        }
-      }
-    }
+    return () => unsubscribe()
   }, [])
 
   // Check lockout status
@@ -144,11 +121,6 @@ export default function Signin() {
     setLoading(true)
 
     try {
-      // Verify reCAPTCHA is ready
-      if (!recaptchaVerifier) {
-        throw new Error('Security verification required')
-      }
-
       const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email,
@@ -169,7 +141,6 @@ export default function Signin() {
       setFailedAttempts(0)
 
     } catch (error) {
-      console.error('Login error:', error)
       setFailedAttempts(prev => prev + 1)
       setLastAttemptTime(Date.now())
 
@@ -201,23 +172,10 @@ export default function Signin() {
 
       toast.error(errorMessage)
       setFormData(prev => ({ ...prev, password: '' }))
-
-      // Reset reCAPTCHA
-      if (recaptchaVerifier) {
-        try {
-          recaptchaVerifier.clear()
-          const newVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            'size': 'invisible'
-          })
-          setRecaptchaVerifier(newVerifier)
-        } catch (e) {
-          console.error('reCAPTCHA reset failed:', e)
-        }
-      }
     } finally {
       setLoading(false)
     }
-  }, [formData, navigate, recaptchaVerifier, authReady, isLocked, failedAttempts])
+  }, [formData, navigate, authReady, isLocked])
 
   const handleGoogleSignin = useCallback(async () => {
     if (isLocked) {
@@ -234,35 +192,40 @@ export default function Signin() {
 
     try {
       const provider = new GoogleAuthProvider()
+      provider.addScope('email')
+      provider.addScope('profile')
       provider.setCustomParameters({
         prompt: 'select_account'
       })
 
-      // Use signInWithRedirect as fallback if popup is blocked
-      try {
-        const result = await signInWithPopup(auth, provider)
-        toast.success('Successfully signed in with Google!')
-        setTimeout(() => navigate('/dashboard'), 1500)
-      } catch (error) {
-        console.error('Google sign-in error:', error)
-
-        if (error.code === 'auth/popup-closed-by-user') {
-          toast.error('Google sign in was cancelled')
-        } else if (error.code === 'auth/popup-blocked') {
-          toast.error('Popup blocked. Please allow popups for this site.')
-        } else if (error.code === 'auth/network-request-failed') {
-          toast.error('Network error. Please check your connection.')
-        } else {
-          toast.error('Google sign in failed. Please try again.')
-        }
+      const result = await signInWithPopup(auth, provider)
+      
+      // Check if email is verified (Google always verifies emails)
+      if (!result.user.emailVerified) {
+        await signOut(auth)
+        toast.error('Please verify your email before signing in.')
+        return
       }
+
+      toast.success('Successfully signed in with Google!')
+      // Navigation will be handled by the onAuthStateChanged listener
+
     } catch (error) {
-      console.error('Google sign-in initialization error:', error)
-      toast.error('Google sign in failed. Please try again.')
+      let errorMessage = 'Google sign in failed. Please try again.'
+
+      if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'Google sign in was cancelled'
+      } else if (error.code === 'auth/popup-blocked') {
+        errorMessage = 'Popup blocked. Please allow popups for this site.'
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Please check your connection.'
+      }
+
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
-  }, [navigate, isLocked, authReady])
+  }, [isLocked, authReady])
 
   const getPasswordStrength = (password) => {
     if (password.length === 0) return 0
@@ -305,9 +268,6 @@ export default function Signin() {
 
       <div className="relative z-10 flex items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md bg-gray-900/80 backdrop-blur-sm rounded-xl border border-gray-800 p-8 shadow-2xl">
-          {/* reCAPTCHA container (hidden) */}
-          <div id="recaptcha-container" ref={recaptchaContainer} className="hidden"></div>
-
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold">Sign In</h2>
             <p className="mt-2 text-gray-400">
