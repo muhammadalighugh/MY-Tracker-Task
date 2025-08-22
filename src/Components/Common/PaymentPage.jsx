@@ -71,7 +71,7 @@ export default function PaymentPage() {
         navigate('/signin');
       }
     } else {
-      toast.error('Use valid coupon code (AMIPRO) for free 15-day premium. Real payment is not implemented.');
+      toast.error('Use valid coupon code  for free 15-day premium. Real payment is not implemented.');
     }
   };
 
