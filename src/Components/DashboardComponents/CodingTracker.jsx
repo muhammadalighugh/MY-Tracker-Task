@@ -78,17 +78,17 @@ const CodingTracker = () => {
         setDailyGoal(data?.dailyGoal || 60);
         setNewDailyGoal(data?.dailyGoal || 60);
       });
-
+  
       const techQuery = query(collection(db, `users/${user.uid}/technologies`));
       const unsubscribeTech = onSnapshot(techQuery, (snapshot) => {
         setTechnologies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       });
-
+  
       const sessionsQuery = query(collection(db, `users/${user.uid}/coding_sessions`), orderBy('date', 'desc'));
       const unsubscribeSessions = onSnapshot(sessionsQuery, (snapshot) => {
         setHistoricalData(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       });
-
+  
       return () => {
         unsubscribeUser();
         unsubscribeTech();
