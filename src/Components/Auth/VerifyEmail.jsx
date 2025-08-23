@@ -78,7 +78,7 @@ export default function VerifyEmail() {
           </p>
           <p className="text-gray-400 mb-8">
             Didn't receive the email?{' '}
-            <button
+            {/* <button
               onClick={handleResendEmail}
               disabled={isResending}
               className="text-blue-500 hover:text-blue-400 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
@@ -94,7 +94,7 @@ export default function VerifyEmail() {
               ) : (
                 'Resend Verification Email'
               )}
-            </button>
+            </button> */}
           </p>
           <button
             onClick={handleSigninRedirect}

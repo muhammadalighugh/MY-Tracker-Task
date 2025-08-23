@@ -458,7 +458,7 @@ const WorkoutTracker = () => {
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="date" stroke="#64748b" fontSize={10} sm:fontSize={12} />
                       <YAxis stroke="#64748b" fontSize={10} sm:fontSize={12} />
-                      <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '10px', fontSize: '12px' }} />
+                      <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '10px',  }} />
                       <Line
                         type="monotone"
                         dataKey="duration"
@@ -490,7 +490,7 @@ const WorkoutTracker = () => {
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="name" stroke="#64748b" fontSize={10} sm:fontSize={12} />
                       <YAxis stroke="#64748b" fontSize={10} sm:fontSize={12} />
-                      <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '10px', fontSize: '12px' }} />
+                      <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '10px',  }} />
                       <Bar dataKey="duration" name="Duration (min)" />
                     </BarChart>
                   </ResponsiveContainer>

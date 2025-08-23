@@ -188,7 +188,7 @@ export default function Signup() {
 
       switch (error.code) {
         case 'auth/email-already-in-use':
-          errorMessage = 'Email already in use'
+          errorMessage = 'Email already in use Signin or Forget Passwrord to continue'
           break
         case 'auth/invalid-email':
           errorMessage = 'Invalid email address'

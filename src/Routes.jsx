@@ -7,10 +7,10 @@ import Profile from "./pages/Profile";
 import Dashboard from "./pages/Dashboard"; 
 
 // Common Components
-import Signup from "./Components/Common/Signup";
-import Signin from "./Components/Common/Signin";
-import VerifyEmail from "./Components/Common/VerifyEmail";
-import ForgotPassword from "./Components/Common/ForgotPassword";
+import Signup from "./Components/Auth/Signup";
+import Signin from "./Components/Auth/Signin";
+import VerifyEmail from "./Components/Auth/VerifyEmail";
+import ForgotPassword from "./Components/Auth/ForgotPassword";
 import PaymentPage from "./Components/Common/PaymentPage";
 
 // Layouts
