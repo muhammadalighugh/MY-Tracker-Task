@@ -1,6 +1,5 @@
-// firebase.config.jsx
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, setPersistence, browserSessionPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
@@ -28,7 +27,16 @@ if (typeof window !== "undefined") {
   });
 }
 
+// Initialize Auth with persistence
 export const auth = getAuth(app);
+setPersistence(auth, browserSessionPersistence)
+  .then(() => {
+    // Persistence set successfully
+  })
+  .catch((error) => {
+    console.error('Firebase persistence error:', error);
+  });
+
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export { analytics };

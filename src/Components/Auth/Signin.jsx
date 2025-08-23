@@ -1,16 +1,15 @@
-import React,  { useState, useEffect, useCallback, useRef } from 'react'
-import { Mail, Lock } from 'lucide-react'
-import { FaGoogle } from 'react-icons/fa'
-import { useNavigate } from 'react-router-dom'
-import { toast } from 'react-toastify'
+import React, { useState, useEffect, useCallback } from 'react';
+import { Mail, Lock } from 'lucide-react';
+import { FaGoogle } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
-  signOut,
   onAuthStateChanged
-} from 'firebase/auth'
-import { auth } from '../../firebase/firebase.config'
+} from 'firebase/auth';
+import { auth } from '../../firebase/firebase.config';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -57,229 +56,226 @@ const SECURITY_CONFIG = {
   EMAIL_REGEX: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
   MAX_FAILED_ATTEMPTS: 5,
   LOCKOUT_TIME: 15 * 60 * 1000 // 15 minutes
-}
+};
 
 function Signin() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-  })
-  const [loading, setLoading] = useState(false)
-  const [failedAttempts, setFailedAttempts] = useState(0)
-  const [lastAttemptTime, setLastAttemptTime] = useState(0)
-  const [isLocked, setIsLocked] = useState(false)
-  const [authReady, setAuthReady] = useState(false)
-  const navigate = useNavigate()
+  });
+  const [loading, setLoading] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lastAttemptTime, setLastAttemptTime] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+  const navigate = useNavigate();
 
   // Initialize Firebase Auth
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Verify auth is properly initialized
         if (!auth || !auth.app) {
-          toast.error('Authentication service unavailable. Please try again later.')
-          return
+          toast.error('Authentication service unavailable. Please try again later.');
+          return;
         }
-
-        setAuthReady(true)
+        setAuthReady(true);
       } catch (error) {
-        toast.error('Authentication service unavailable. Please try again later.')
+        toast.error('Authentication service unavailable. Please try again later.');
       }
-    }
+    };
 
-    initializeAuth()
+    initializeAuth();
 
     // Check auth state for redirect
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        navigate('/dashboard')
+      if (user && user.emailVerified) {
+        navigate('/dashboard');
       }
-    })
+    });
 
-    return () => unsubscribe()
-  }, [])
+    return () => unsubscribe();
+  }, []);
 
   // Check lockout status
   useEffect(() => {
     if (failedAttempts >= SECURITY_CONFIG.MAX_FAILED_ATTEMPTS) {
-      const timeSinceLastAttempt = Date.now() - lastAttemptTime
+      const timeSinceLastAttempt = Date.now() - lastAttemptTime;
       if (timeSinceLastAttempt < SECURITY_CONFIG.LOCKOUT_TIME) {
-        setIsLocked(true)
+        setIsLocked(true);
       } else {
-        setIsLocked(false)
-        setFailedAttempts(0)
+        setIsLocked(false);
+        setFailedAttempts(0);
       }
     }
-  }, [failedAttempts, lastAttemptTime])
+  }, [failedAttempts, lastAttemptTime]);
 
   const handleChange = useCallback((e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }, [])
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  }, []);
 
   const validatePassword = (password) => {
-    if (password.length < SECURITY_CONFIG.PASSWORD_MIN_LENGTH) return false
-    if (!/[A-Z]/.test(password)) return false
-    if (!/[0-9]/.test(password)) return false
-    if (!/[^A-Za-z0-9]/.test(password)) return false
-    return true
-  }
+    if (password.length < SECURITY_CONFIG.PASSWORD_MIN_LENGTH) return false;
+    if (!/[A-Z]/.test(password)) return false;
+    if (!/[0-9]/.test(password)) return false;
+    if (!/[^A-Za-z0-9]/.test(password)) return false;
+    return true;
+  };
 
   const validateEmail = (email) => {
-    return SECURITY_CONFIG.EMAIL_REGEX.test(email)
-  }
+    return SECURITY_CONFIG.EMAIL_REGEX.test(email);
+  };
 
   const handleSubmit = useCallback(async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (isLocked) {
-      toast.error('Account temporarily locked due to too many failed attempts.')
-      return
+      toast.error('Account temporarily locked due to too many failed attempts.');
+      return;
     }
 
     if (!formData.email || !formData.password) {
-      toast.error('Please fill in all fields')
-      return
+      toast.error('Please fill in all fields');
+      return;
     }
 
     if (!validateEmail(formData.email)) {
-      toast.error('Please enter a valid email address')
-      return
+      toast.error('Please enter a valid email address');
+      return;
     }
 
     if (!validatePassword(formData.password)) {
-      toast.error('Password must be at least 8 characters with uppercase, number, and special character')
-      return
+      toast.error('Password must be at least 8 characters with uppercase, number, and special character');
+      return;
     }
 
     if (!authReady) {
-      toast.error('Authentication service not ready. Please try again.')
-      return
+      toast.error('Authentication service not ready. Please try again.');
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     try {
       const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
-      )
+      );
 
-      const user = userCredential.user
+      const user = userCredential.user;
 
       if (!user.emailVerified) {
-        await signOut(auth)
-        toast.error('Please verify your email before signing in.')
-        setTimeout(() => navigate('/verify-email'), 1500)
-        return
+        toast.error('Please verify your email before signing in.');
+        setTimeout(() => navigate('/verify-email'), 1500);
+        return;
       }
 
-      toast.success('Successfully signed in! Redirecting...')
-      setTimeout(() => navigate('/dashboard'), 1500)
-      setFailedAttempts(0)
-
+      toast.success('Successfully signed in! Redirecting...');
+      setTimeout(() => navigate('/dashboard'), 1500);
+      setFailedAttempts(0);
     } catch (error) {
-      setFailedAttempts(prev => prev + 1)
-      setLastAttemptTime(Date.now())
+      setFailedAttempts(prev => prev + 1);
+      setLastAttemptTime(Date.now());
 
-      let errorMessage = 'Sign in failed. Please try again.'
+      let errorMessage = 'Sign in failed. Please try again.';
 
       switch (error.code) {
         case 'auth/invalid-email':
-          errorMessage = 'Invalid email format'
-          break
+          errorMessage = 'Invalid email format';
+          break;
         case 'auth/user-disabled':
-          errorMessage = 'Account disabled'
-          break
+          errorMessage = 'Account disabled';
+          break;
         case 'auth/user-not-found':
+          errorMessage = 'No account found with this email. Please sign up.';
+          break;
         case 'auth/wrong-password':
-          errorMessage = 'Invalid email or password'
-          break
+          errorMessage = 'Invalid email or password';
+          break;
         case 'auth/too-many-requests':
-          errorMessage = 'Too many attempts. Please try again later.'
-          break
+          errorMessage = 'Too many attempts. Please try again later.';
+          break;
         case 'auth/network-request-failed':
-          errorMessage = 'Network error. Please check your connection.'
-          break
+          errorMessage = 'Network error. Please check your connection.';
+          break;
         case 'auth/internal-error':
-          errorMessage = 'Authentication service error. Please refresh and try again.'
-          break
+          errorMessage = 'Authentication service error. Please refresh and try again.';
+          break;
         default:
-          errorMessage = 'Sign in failed. Please try again.'
+          errorMessage = 'Sign in failed. Please try again.';
       }
 
-      toast.error(errorMessage)
-      setFormData(prev => ({ ...prev, password: '' }))
+      toast.error(errorMessage);
+      setFormData(prev => ({ ...prev, password: '' }));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [formData, navigate, authReady, isLocked])
+  }, [formData, navigate, authReady, isLocked]);
 
   const handleGoogleSignin = useCallback(async () => {
     if (isLocked) {
-      toast.error('Account temporarily locked due to too many failed attempts.')
-      return
+      toast.error('Account temporarily locked due to too many failed attempts.');
+      return;
     }
 
     if (!authReady) {
-      toast.error('Authentication service not ready. Please try again.')
-      return
+      toast.error('Authentication service not ready. Please try again.');
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     try {
-      const provider = new GoogleAuthProvider()
-      provider.addScope('email')
-      provider.addScope('profile')
+      const provider = new GoogleAuthProvider();
+      provider.addScope('email');
+      provider.addScope('profile');
       provider.setCustomParameters({
         prompt: 'select_account'
-      })
+      });
 
-      const result = await signInWithPopup(auth, provider)
-      
-      // Check if email is verified (Google always verifies emails)
+      const result = await signInWithPopup(auth, provider);
+
+      // Google accounts are typically verified, but check to be consistent
       if (!result.user.emailVerified) {
-        await signOut(auth)
-        toast.error('Please verify your email before signing in.')
-        return
+        toast.error('Please verify your email before signing in.');
+        setTimeout(() => navigate('/verify-email'), 1500);
+        return;
       }
 
-      toast.success('Successfully signed in with Google!')
-      // Navigation will be handled by the onAuthStateChanged listener
-
+      toast.success('Successfully signed in with Google!');
+      setTimeout(() => navigate('/dashboard'), 1500);
     } catch (error) {
-      let errorMessage = 'Google sign in failed. Please try again.'
+      let errorMessage = 'Google sign in failed. Please try again.';
 
       if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = 'Google sign in was cancelled'
+        errorMessage = 'Google sign in was cancelled';
       } else if (error.code === 'auth/popup-blocked') {
-        errorMessage = 'Popup blocked. Please allow popups for this site.'
+        errorMessage = 'Popup blocked. Please allow popups for this site.';
       } else if (error.code === 'auth/network-request-failed') {
-        errorMessage = 'Network error. Please check your connection.'
+        errorMessage = 'Network error. Please check your connection.';
       }
 
-      toast.error(errorMessage)
+      toast.error(errorMessage);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [isLocked, authReady])
+  }, [isLocked, authReady, navigate]);
 
   const getPasswordStrength = (password) => {
-    if (password.length === 0) return 0
-    let strength = Math.min(password.length / 2, 2)
+    if (password.length === 0) return 0;
+    let strength = Math.min(password.length / 2, 2);
 
-    if (/[A-Z]/.test(password)) strength += 1
-    if (/[0-9]/.test(password)) strength += 1
-    if (/[^A-Za-z0-9]/.test(password)) strength += 1
+    if (/[A-Z]/.test(password)) strength += 1;
+    if (/[0-9]/.test(password)) strength += 1;
+    if (/[^A-Za-z0-9]/.test(password)) strength += 1;
 
-    return Math.min(strength, 5)
-  }
+    return Math.min(strength, 5);
+  };
 
-  const passwordStrength = getPasswordStrength(formData.password)
+  const passwordStrength = getPasswordStrength(formData.password);
   const strengthColor = passwordStrength < 2 ? 'bg-red-500' :
-                       passwordStrength < 4 ? 'bg-yellow-500' : 'bg-green-500'
+                       passwordStrength < 4 ? 'bg-yellow-500' : 'bg-green-500';
 
   return (
     <div className="relative isolate min-h-screen bg-black text-white overflow-hidden">
@@ -466,7 +462,7 @@ function Signin() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // Wrap the component with Error Boundary
@@ -475,5 +471,5 @@ export default function SigninWithErrorBoundary() {
     <ErrorBoundary>
       <Signin />
     </ErrorBoundary>
-  )
+  );
 }

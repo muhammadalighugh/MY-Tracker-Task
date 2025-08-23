@@ -16,10 +16,13 @@ export default function ForgotPassword() {
       toast.error('Please enter your email address');
       return;
     }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
     setIsSending(true);
     try {
-      await sendPasswordResetEmail(auth, email);
-      toast.success('Password reset email sent! Please check your inbox or spam folder.');
+      await sendPasswordResetEmail(auth, normalizedEmail);
+      toast.success('Password reset email sent! Please check your inbox or spam folder. If you didn’t receive it, ensure the email is registered.');
       setTimeout(() => navigate('/signin'), 2000);
     } catch (error) {
       let errorMessage = 'Failed to send reset email';
@@ -34,7 +37,7 @@ export default function ForgotPassword() {
           errorMessage = 'Too many requests. Please try again later.';
           break;
         default:
-          errorMessage = error.message || 'An error occurred';
+          errorMessage = `${error.message} (Code: ${error.code})`;
       }
       toast.error(errorMessage);
     } finally {

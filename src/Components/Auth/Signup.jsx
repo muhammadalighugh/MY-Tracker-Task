@@ -1,6 +1,6 @@
-import React , { useState, useCallback, useEffect } from 'react'
-import { FaGoogle } from 'react-icons/fa'
-import { auth } from '../../firebase/firebase.config'
+import React, { useState, useCallback, useEffect } from 'react';
+import { FaGoogle } from 'react-icons/fa';
+import { auth } from '../../firebase/firebase.config';
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
@@ -9,10 +9,10 @@ import {
   sendEmailVerification,
   signOut,
   RecaptchaVerifier
-} from 'firebase/auth'
-import { toast } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
-import { useNavigate } from 'react-router-dom'
+} from 'firebase/auth';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from 'react-router-dom';
 
 // Security configuration constants
 const SECURITY_CONFIG = {
@@ -20,23 +20,23 @@ const SECURITY_CONFIG = {
   EMAIL_REGEX: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
   PASSWORD_REGEX: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,
   NAME_REGEX: /^[a-zA-Z\s]{2,}$/
-}
+};
 
 // Memoized password strength component
 const PasswordStrength = React.memo(({ password }) => {
   const getStrength = (pwd) => {
-    if (!pwd) return 0
-    let strength = 0
-    if (pwd.length >= 8) strength++
-    if (/[A-Z]/.test(pwd)) strength++
-    if (/[0-9]/.test(pwd)) strength++
-    if (/[^A-Za-z0-9]/.test(pwd)) strength++
-    return strength
-  }
+    if (!pwd) return 0;
+    let strength = 0;
+    if (pwd.length >= 8) strength++;
+    if (/[A-Z]/.test(pwd)) strength++;
+    if (/[0-9]/.test(pwd)) strength++;
+    if (/[^A-Za-z0-9]/.test(pwd)) strength++;
+    return strength;
+  };
 
-  const strength = getStrength(password)
+  const strength = getStrength(password);
   const strengthColor = strength < 2 ? 'bg-red-500' :
-                       strength < 4 ? 'bg-yellow-500' : 'bg-green-500'
+                       strength < 4 ? 'bg-yellow-500' : 'bg-green-500';
 
   return password ? (
     <div className="mt-2">
@@ -58,21 +58,21 @@ const PasswordStrength = React.memo(({ password }) => {
         </p>
       )}
     </div>
-  ) : null
-})
+  ) : null;
+});
 
 export default function Signup() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: ''
-  })
-  const [isLoading, setIsLoading] = useState(false)
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-  const [recaptchaVerifier, setRecaptchaVerifier] = useState(null)
-  const [authReady, setAuthReady] = useState(false)
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
 
   // Initialize reCAPTCHA
   useEffect(() => {
@@ -83,217 +83,202 @@ export default function Signup() {
             'size': 'invisible',
             'callback': () => {},
             'expired-callback': () => {}
-          })
-          setRecaptchaVerifier(verifier)
+          });
+          setRecaptchaVerifier(verifier);
         }
-        setAuthReady(true)
+        setAuthReady(true);
       } catch (error) {
-        console.error('Auth initialization error:', error)
-        toast.error('Authentication service unavailable. Please try again later.')
+        console.error('Auth initialization error:', error);
+        toast.error('Authentication service unavailable. Please try again later.');
       }
-    }
+    };
 
-    initializeAuth()
+    initializeAuth();
 
     return () => {
       if (recaptchaVerifier) {
         try {
-          recaptchaVerifier.clear()
+          recaptchaVerifier.clear();
         } catch (e) {
-          console.error('Error clearing reCAPTCHA:', e)
+          console.error('Error clearing reCAPTCHA:', e);
         }
       }
-    }
-  }, [])
+    };
+  }, []);
 
   const handleChange = useCallback((e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }, [])
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  }, []);
 
   // Secure form validation
   const validateForm = () => {
-    // Name validation
     if (!SECURITY_CONFIG.NAME_REGEX.test(formData.name)) {
-      toast.error('Please enter a valid name (letters and spaces only)')
-      return false
+      toast.error('Please enter a valid name (letters and spaces only)');
+      return false;
     }
 
-    // Email validation
     if (!SECURITY_CONFIG.EMAIL_REGEX.test(formData.email)) {
-      toast.error('Please enter a valid email address')
-      return false
+      toast.error('Please enter a valid email address');
+      return false;
     }
 
-    // Password validation
     if (formData.password.length < SECURITY_CONFIG.MIN_PASSWORD_LENGTH) {
-      toast.error(`Password must be at least ${SECURITY_CONFIG.MIN_PASSWORD_LENGTH} characters`)
-      return false
+      toast.error(`Password must be at least ${SECURITY_CONFIG.MIN_PASSWORD_LENGTH} characters`);
+      return false;
     }
 
     if (!SECURITY_CONFIG.PASSWORD_REGEX.test(formData.password)) {
-      toast.error('Password must contain uppercase, lowercase, number, and special character')
-      return false
+      toast.error('Password must contain uppercase, lowercase, number, and special character');
+      return false;
     }
 
-    // Confirm password match
     if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords don't match")
-      return false
+      toast.error("Passwords don't match");
+      return false;
     }
 
-    return true
-  }
+    return true;
+  };
 
   const handleSubmit = useCallback(async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!validateForm() || !authReady) {
-      return
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
-      // Verify reCAPTCHA
       if (!recaptchaVerifier) {
-        throw new Error('Security verification required')
+        throw new Error('Security verification required');
       }
 
-      // Create user with email/password
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
-      )
+      );
 
-      // Update user profile
       await updateProfile(userCredential.user, {
         displayName: formData.name
-      })
+      });
 
-      // Send email verification
-      await sendEmailVerification(userCredential.user)
+      await sendEmailVerification(userCredential.user);
 
-      // Sign out to prevent auto-login before verification
-      await signOut(auth)
+      // Keep user signed in until verification
+      // Removed signOut(auth) to maintain session
 
-      toast.success('Account created! Please check your email to verify your account.')
-      setTimeout(() => navigate('/verify-email'), 1500)
-
+      toast.success('Account created! Please check your email to verify your account.');
+      setTimeout(() => navigate('/verify-email'), 1500);
     } catch (error) {
-      console.error('Signup error:', error)
+      console.error('Signup error:', error);
 
-      let errorMessage = 'Signup failed'
+      let errorMessage = 'Signup failed';
 
       switch (error.code) {
         case 'auth/email-already-in-use':
-          errorMessage = 'Email already in use Signin or Forget Passwrord to continue'
-          break
+          errorMessage = 'Email already in use. Sign in or reset password to continue';
+          break;
         case 'auth/invalid-email':
-          errorMessage = 'Invalid email address'
-          break
+          errorMessage = 'Invalid email address';
+          break;
         case 'auth/weak-password':
-          errorMessage = `Password should be at least ${SECURITY_CONFIG.MIN_PASSWORD_LENGTH} characters`
-          break
+          errorMessage = `Password should be at least ${SECURITY_CONFIG.MIN_PASSWORD_LENGTH} characters`;
+          break;
         case 'auth/operation-not-allowed':
-          errorMessage = 'Email/password accounts are not enabled'
-          break
+          errorMessage = 'Email/password accounts are not enabled';
+          break;
         case 'auth/network-request-failed':
-          errorMessage = 'Network error. Please check your connection.'
-          break
+          errorMessage = 'Network error. Please check your connection.';
+          break;
         case 'auth/internal-error':
-          errorMessage = 'Authentication service error. Please refresh and try again.'
-          break
+          errorMessage = 'Authentication service error. Please refresh and try again.';
+          break;
         default:
-          errorMessage = 'An unknown error occurred'
+          errorMessage = 'An unknown error occurred';
       }
 
-      toast.error(errorMessage)
+      toast.error(errorMessage);
 
-      // Reset reCAPTCHA on error
       if (recaptchaVerifier) {
         try {
-          recaptchaVerifier.clear()
+          recaptchaVerifier.clear();
           const newVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
             'size': 'invisible'
-          })
-          setRecaptchaVerifier(newVerifier)
+          });
+          setRecaptchaVerifier(newVerifier);
         } catch (e) {
-          console.error('reCAPTCHA reset failed:', e)
+          console.error('reCAPTCHA reset failed:', e);
         }
       }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [formData, navigate, recaptchaVerifier, authReady])
+  }, [formData, navigate, recaptchaVerifier, authReady]);
 
   const handleGoogleSignup = useCallback(async () => {
     if (!authReady) {
-      toast.error('Authentication service not ready. Please try again.')
-      return
+      toast.error('Authentication service not ready. Please try again.');
+      return;
     }
 
-    setIsGoogleLoading(true)
+    setIsGoogleLoading(true);
 
     try {
-      const provider = new GoogleAuthProvider()
+      const provider = new GoogleAuthProvider();
       provider.setCustomParameters({
         prompt: 'select_account'
-      })
+      });
 
-      try {
-        const userCredential = await signInWithPopup(auth, provider)
-        const user = userCredential.user
+      const userCredential = await signInWithPopup(auth, provider);
+      const user = userCredential.user;
 
-        // For Google signups, we still want to ensure they have a name
-        if (!user.displayName) {
-          await updateProfile(user, {
-            displayName: user.email.split('@')[0]
-          })
-        }
-
-        // Check if email is verified (Google accounts are typically verified)
-        if (user.emailVerified) {
-          toast.success('Signed up with Google! Redirecting...')
-          setTimeout(() => navigate('/dashboard'), 1500)
-        } else {
-          await signOut(auth)
-          toast.error('Please verify your email to continue.')
-          setTimeout(() => navigate('/verify-email'), 1500)
-        }
-      } catch (error) {
-        console.error('Google signup error:', error)
-
-        let errorMessage = 'Google signup failed'
-
-        switch (error.code) {
-          case 'auth/popup-closed-by-user':
-            errorMessage = 'Signup popup was closed'
-            break
-          case 'auth/cancelled-popup-request':
-            errorMessage = 'Signup cancelled'
-            break
-          case 'auth/account-exists-with-different-credential':
-            errorMessage = 'Account already exists with different credentials'
-            break
-          case 'auth/network-request-failed':
-            errorMessage = 'Network error. Please check your connection.'
-            break
-          default:
-            errorMessage = error.message || 'An unknown error occurred'
-        }
-
-        toast.error(errorMessage)
+      if (!user.displayName) {
+        await updateProfile(user, {
+          displayName: user.email.split('@')[0]
+        });
       }
+
+      if (user.emailVerified) {
+        toast.success('Signed up with Google! Redirecting...');
+        setTimeout(() => navigate('/dashboard'), 1500);
+      } else {
+        await sendEmailVerification(user);
+        toast.success('Account created with Google! Please check your email to verify your account.');
+        setTimeout(() => navigate('/verify-email'), 1500);
+      }
+    } catch (error) {
+      console.error('Google signup error:', error);
+
+      let errorMessage = 'Google signup failed';
+
+      switch (error.code) {
+        case 'auth/popup-closed-by-user':
+          errorMessage = 'Signup popup was closed';
+          break;
+        case 'auth/cancelled-popup-request':
+          errorMessage = 'Signup cancelled';
+          break;
+        case 'auth/account-exists-with-different-credential':
+          errorMessage = 'Account already exists with different credentials';
+          break;
+        case 'auth/network-request-failed':
+          errorMessage = 'Network error. Please check your connection.';
+          break;
+        default:
+          errorMessage = error.message || 'An unknown error occurred';
+      }
+
+      toast.error(errorMessage);
     } finally {
-      setIsGoogleLoading(false)
+      setIsGoogleLoading(false);
     }
-  }, [navigate, authReady])
+  }, [navigate, authReady]);
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-      {/* Invisible reCAPTCHA container */}
       <div id="recaptcha-container" className="hidden"></div>
 
       <div className="w-full max-w-md bg-white/15 backdrop-blur-lg rounded-xl border border-white/40 p-8">
@@ -418,5 +403,5 @@ export default function Signup() {
         </form>
       </div>
     </div>
-  )
+  );
 }
