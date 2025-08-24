@@ -36,18 +36,27 @@ import CardMain from "./Components/CardsCreator/Card";
 
 // Not Found
 import NotFoundPage from "./pages/NotFound"; 
+import AdminPanel from "./Admin/Admin";
+import AdminLogin from "./Admin/Auth/Login";
+import Pricing from "./pages/Pricing";
+// import AdminUsers from "./Admin/AdminUsers";
 
 export default function AppRoutes() {
   return (
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<Home />} />
+      <Route path="/admin" element={<AdminPanel />} />
       <Route path="/signin" element={<Signin />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/pricing" element={<Pricing />} />
+
       <Route path="/payment" element={<PaymentPage />} />
       <Route path="*" element={<NotFoundPage />} />
+      <Route path="/AdminLogin-admin123" element={<AdminLogin />} />
+      {/* <Route path="/Adminuser" element={<AdminUsers />} /> */}
 
       {/* Protected Dashboard Route */}
       <Route

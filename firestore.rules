@@ -1,0 +1,146 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // Allow users to read and write their own user document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Allow admins to read all user documents
+      allow read: if isAdmin();
+      
+      // Allow admins to update user roles and status
+      allow update: if isAdmin() && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'isAdmin', 'status']);
+      
+      // Allow users to manage their technologies subcollection
+      match /technologies/{techId} {
+        allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isAdmin();
+      }
+      
+      // Allow users to manage their coding sessions subcollection
+      match /coding_sessions/{sessionId} {
+        allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isAdmin();
+      }
+      
+      // Allow users to manage other subcollections
+      match /prayerData/{docId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isAdmin();
+      }
+      
+      match /quranData/{docId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isAdmin();
+      }
+      
+      match /healthData/{docId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isAdmin();
+      }
+      
+      match /trackers/{trackerId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isAdmin();
+      }
+      
+      match /workouts/{docId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isAdmin();
+      }
+      
+      match /books/{docId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isAdmin();
+      }
+      
+      match /readingSessions/{docId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isAdmin();
+      }
+      
+      match /settings/{docId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isAdmin();
+      }
+      
+      match /expenses/{docId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isAdmin();
+      }
+      
+      match /incomes/{docId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isAdmin();
+      }
+      
+      match /debts/{docId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isAdmin();
+      }
+      
+      match /budgets/{docId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isAdmin();
+      }
+      
+      match /mobileUsage/{docId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isAdmin();
+      }
+    }
+    
+    // Allow users to manage their tasks
+    match /tasks/{taskId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow list: if request.auth != null;
+      
+      // Allow admins to read all tasks
+      allow read: if isAdmin();
+    }
+    
+    // Admin-only collections and operations
+    match /admin/{document=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    match /system/{document=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    match /reports/{document=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    match /analytics/{document=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Allow admins to create new users (with proper validation)
+    match /users/{userId} {
+      allow create: if request.auth != null && (
+        // Users can create their own document during registration
+        request.auth.uid == userId ||
+        // Admins can create user documents
+        (isAdmin() && 
+         request.resource.data.keys().hasAll(['email', 'firstName', 'lastName', 'role', 'isAdmin', 'createdAt']) &&
+         request.resource.data.email is string &&
+         request.resource.data.firstName is string)
+      );
+    }
+    
+    // Deny all other access explicitly
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
