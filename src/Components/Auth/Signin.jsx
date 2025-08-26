@@ -327,13 +327,13 @@ function Signin() {
                       Processing...
                     </>
                   ) : (
-                    <button className="flex items-center font-serif">
-                    <FaGoogle className="mr-2" size={18} />
-                    Sign in with Google
-                  </button>
-                  
+                    <span className="flex items-center font-serif">
+                      <FaGoogle className="mr-2" size={18} />
+                      Sign in with Google
+                    </span>
                   )}
                 </button>
+
               </div>
               <div className="flex items-center my-6">
                 <div className="flex-grow border-t border-gray-600/50"></div>
@@ -450,9 +450,9 @@ function Signin() {
                 )}
               </form>
               <div className="mt-8 text-center text-xs text-gray-500 flex items-center justify-center gap-2">
-  <Mail size={14} className="text-gray-400" />
-  <p>Support: info@gmail.com</p>
-</div>
+                <Mail size={14} className="text-gray-400" />
+                <p>Support: info@gmail.com</p>
+              </div>
 
             </div>
           </div>

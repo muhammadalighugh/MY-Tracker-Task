@@ -203,7 +203,7 @@ export default function Sidebar() {
         {!isPremium && (
           <div className={`${collapsed ? "flex justify-center" : "px-3"} mt-2`}>
             <button
-              onClick={() => navigate("/payment")}
+              onClick={() => navigate("/pricing")}
               className={`w-full flex items-center justify-center py-1 px-3 bg-indigo-500 hover:bg-indigo-600 rounded-lg text-white text-sm font-medium transition-colors ${collapsed ? "p-2" : ""}`}
             >
               {collapsed ? <CircleDollarSign size={16} /> : "Upgrade to Pro"}

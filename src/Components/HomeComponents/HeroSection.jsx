@@ -252,7 +252,7 @@ export default function HeroSection() {
   }, [animateText]);
 
   return (
-    <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 lg:pt-24">
+    <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-20 sm:pt-20 lg:pt-24">
       <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center min-h-[calc(100vh-8rem)] sm:min-h-[calc(100vh-10rem)]">
         {/* Left Side - Text Content */}
         <div className={`flex flex-col justify-center space-y-6 sm:space-y-8 lg:pr-8 order-2 lg:order-1 transition-all duration-1000 ${

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { ArrowRight, Menu, X, ChevronRight } from 'lucide-react'
+import { ArrowRight, Menu, X, ChevronRight ,Mail } from 'lucide-react'
 
 // Memoized navigation data
 const navigation = [
@@ -132,45 +132,56 @@ export default function Navbar() {
   return (
     <>
       {/* Header with optimized scroll behavior */}
-      <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ease-out ${
-        isScrolled
-          ? 'bg-white/15 backdrop-blur-xl border-b border-slate-700/50 shadow-2xl'
-          : 'bg-transparent backdrop-blur-sm'
-      }`}>
-        <nav className="flex items-center justify-between px-4 py-4 lg:px-8 mx-auto max-w-7xl h-16">
-          {/* Logo - Memoized */}
-          <div className="flex lg:flex-1">
-            <Logo />
-          </div>
+      <header
+  className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ease-out
+    ${isScrolled
+      ? 'bg-white/15 backdrop-blur-xl border-b border-slate-700/50 shadow-2xl'
+      : 'bg-transparent backdrop-blur-sm'
+    }`}
+>
+  {/* Navbar */}
+  <nav className="flex items-center justify-between px-4 py-4 lg:px-8 mx-auto max-w-7xl h-16">
+    {/* Logo - Memoized */}
+    <div className="flex lg:flex-1">
+      <Logo />
+    </div>
 
-          {/* Desktop Navigation - Memoized links */}
-          <div className="hidden lg:flex lg:items-center lg:gap-1">
-            {navigation.map((item, index) => (
-              <NavLink key={`${item.name}-${index}`} item={item} index={index} />
-            ))}
-          </div>
+    {/* Desktop Navigation - Memoized links */}
+    <div className="hidden lg:flex lg:items-center lg:gap-1">
+      {navigation.map((item, index) => (
+        <NavLink key={`${item.name}-${index}`} item={item} index={index} />
+      ))}
+    </div>
 
-          {/* Desktop CTA - Memoized */}
-          <div className="hidden lg:flex lg:flex-1 lg:justify-end">
-            <CTAButton />
-          </div>
+    {/* Desktop CTA - Memoized */}
+    <div className="hidden lg:flex lg:flex-1 lg:justify-end">
+      <CTAButton />
+    </div>
 
-          {/* Mobile Menu Button - Optimized */}
-          <div className="flex lg:hidden">
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(true)}
-              className="group relative p-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-slate-800/50 transition-all duration-200"
-              aria-expanded={mobileMenuOpen}
-              aria-controls="mobile-menu"
-            >
-              <span className="sr-only">Open main menu</span>
-              <Menu className="h-6 w-6 transition-transform group-hover:scale-110" />
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-purple-500/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-            </button>
-          </div>
-        </nav>
-      </header>
+    {/* Mobile Menu Button - Optimized */}
+    <div className="flex lg:hidden">
+      <button
+        type="button"
+        onClick={() => setMobileMenuOpen(true)}
+        className="group relative p-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-slate-800/50 transition-all duration-200"
+        aria-expanded={mobileMenuOpen}
+        aria-controls="mobile-menu"
+      >
+        <span className="sr-only">Open main menu</span>
+        <Menu className="h-6 w-6 transition-transform group-hover:scale-110" />
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-purple-500/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+      </button>
+    </div>
+  </nav>
+
+  {/* ✨ Full Bottom Gradient Border */}
+  <div
+    className="absolute bottom-0 inset-x-0 h-[1px] 
+               bg-gradient-to-r from-emerald-500 via-emerald-500 to-emerald-500 
+               opacity-80"
+  />
+</header>
+
 
       {/* Mobile Menu - Optimized with memoized components */}
       {mobileMenuOpen && (
@@ -233,11 +244,15 @@ export default function Navbar() {
                 <CTAButton onClick={handleNavClick} mobile fullWidth />
 
                 <button
-                  onClick={handleNavClick}
-                  className="w-full mt-3 px-6 py-3 text-sm font-medium text-gray-400 hover:text-white transition-colors duration-200"
-                >
-                  Learn more about features
-                </button>
+  onClick={() => window.location.href = "mailto:info@gmail.com"}
+  className="w-full mt-3 px-6 py-3 flex items-center justify-center gap-2 
+             text-sm font-medium text-gray-400 hover:text-white 
+             transition-colors duration-200"
+>
+  <Mail className="w-4 h-4" />
+  <span>Support:</span>
+  <span className="font-serif">info@amigsol.com</span>
+</button>
               </div>
             </div>
           </div>
