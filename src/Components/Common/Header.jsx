@@ -67,18 +67,7 @@ export default function Header() {
         </div>
 
         {/* Center: Feedback Text and Message Icon */}
-        <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-indigo-800 font-medium">
-          <MessageCircle size={16} className="text-indigo-600 flex-shrink-0" />
-          <span className="leading-tight">
-            We appreciate your feedback:{" "}
-            <a
-              href="mailto:info@amigsol.com"
-              className="text-indigo-700 hover:underline"
-            >
-              info@amigsol.com
-            </a>
-          </span>
-        </div>
+        
 
         {/* Right: Date + Notification */}
         <div className="flex items-center gap-2 sm:gap-4 relative">

@@ -7,7 +7,7 @@ import { auth, db } from "../../firebase/firebase.config";
 import { toast } from "react-toastify";
 import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import {
-  ChevronLeft, ChevronRight, ChevronDown, ChevronUp, X, Home, HeartHandshake, Code, Dumbbell, BookOpen, Carrot, Smartphone, CircleDollarSign, ListTodo, IdCardLanyard, NotebookPen, LogOut,
+  ChevronsLeft , ChevronsRight , ChevronDown, ChevronUp, X, Home, HeartHandshake, Code, Dumbbell, BookOpen, Carrot, Smartphone, CircleDollarSign, ListTodo, IdCardLanyard, NotebookPen, LogOut,
 } from "lucide-react";
 
 const ICON_MAP = {
@@ -172,7 +172,7 @@ export default function Sidebar() {
               onClick={() => setCollapsed(!collapsed)}
               className="hidden lg:block text-slate-500 hover:text-slate-800"
             >
-              {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+              {collapsed ? <ChevronsRight  size={16} /> : <ChevronsLeft  size={16} />}
             </button>
             <button
               onClick={() => setSidebarOpen(false)}

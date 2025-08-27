@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pakistan Health Tracker - صحت کا ٹریکر</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'pakistan-green': '#01411C',
+                        'pakistan-light': '#228B22',
+                        'crescent': '#FFFFFF'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #01411C 0%, #228B22 100%);
+        }
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .hover-scale {
+            transition: transform 0.3s ease;
+        }
+        .hover-scale:hover {
+            transform: scale(1.05);
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                        <i class="fas fa-heartbeat text-pakistan-green text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">Pakistan Health Tracker</h1>
+                        <p class="text-sm opacity-90">صحت کا ٹریکر - آپ کی صحت، آپ کی ذمہ داری</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="emergencyBtn" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-semibold transition-colors pulse-animation">
+                        <i class="fas fa-phone-alt mr-2"></i>Emergency: 1122
+                    </button>
+                    <div class="text-right text-sm">
+                        <div id="currentTime" class="font-semibold"></div>
+                        <div class="opacity-90">Pakistan Standard Time</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6">
+        <!-- Quick Stats Dashboard -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-lg p-6 hover-scale">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">BMI Status</p>
+                        <p id="bmiValue" class="text-2xl font-bold text-pakistan-green">--</p>
+                        <p id="bmiCategory" class="text-xs text-gray-500">Calculate BMI</p>
+                    </div>
+                    <div class="w-12 h-12 bg-pakistan-light bg-opacity-20 rounded-full flex items-center justify-center">
+                        <i class="fas fa-weight text-pakistan-green text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 hover-scale">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">Blood Pressure</p>
+                        <p id="bpValue" class="text-2xl font-bold text-red-600">--/--</p>
+                        <p class="text-xs text-gray-500">mmHg</p>
+                    </div>
+                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-heartbeat text-red-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 hover-scale">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">Blood Sugar</p>
+                        <p id="sugarValue" class="text-2xl font-bold text-blue-600">--</p>
+                        <p class="text-xs text-gray-500">mg/dL</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-tint text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 hover-scale">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">Water Intake</p>
+                        <p id="waterValue" class="text-2xl font-bold text-cyan-600">0</p>
+                        <p class="text-xs text-gray-500">Glasses (8 recommended)</p>
+                    </div>
+                    <div class="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-glass-water text-cyan-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Tabs -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <!-- Tab Navigation -->
+            <div class="border-b border-gray-200">
+                <nav class="flex space-x-8 px-6" aria-label="Tabs">
+                    <button class="tab-btn py-4 px-2 border-b-2 border-pakistan-green text-pakistan-green font-medium text-sm active" data-tab="vitals">
+                        <i class="fas fa-heartbeat mr-2"></i>Vital Signs
+                    </button>
+                    <button class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm" data-tab="medications">
+                        <i class="fas fa-pills mr-2"></i>Medications
+                    </button>
+                    <button class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm" data-tab="lifestyle">
+                        <i class="fas fa-running mr-2"></i>Lifestyle
+                    </button>
+                    <button class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm" data-tab="appointments">
+                        <i class="fas fa-calendar-alt mr-2"></i>Appointments
+                    </button>
+                    <button class="tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm" data-tab="reports">
+                        <i class="fas fa-chart-line mr-2"></i>Reports
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="p-6">
+                <!-- Vital Signs Tab -->
+                <div id="vitals" class="tab-content">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- BMI Calculator -->
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4 text-pakistan-green">
+                                <i class="fas fa-calculator mr-2"></i>BMI Calculator
+                            </h3>
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Height (cm)</label>
+                                        <input type="number" id="height" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pakistan-green" placeholder="170">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
+                                        <input type="number" id="weight" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pakistan-green" placeholder="70">
+                                    </div>
+                                </div>
+                                <button onclick="calculateBMI()" class="w-full bg-pakistan-green text-white py-2 px-4 rounded-md hover:bg-pakistan-light transition-colors">
+                                    Calculate BMI
+                                </button>
+                                <div id="bmiResult" class="hidden bg-white p-4 rounded-md border-l-4 border-pakistan-green">
+                                    <p class="font-semibold">BMI Result: <span id="bmiResultValue"></span></p>
+                                    <p class="text-sm text-gray-600 mt-1" id="bmiResultCategory"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Blood Pressure Tracker -->
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4 text-red-600">
+                                <i class="fas fa-heartbeat mr-2"></i>Blood Pressure
+                            </h3>
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Systolic</label>
+                                        <input type="number" id="systolic" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="120">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Diastolic</label>
+                                        <input type="number" id="diastolic" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="80">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Heart Rate (BPM)</label>
+                                    <input type="number" id="heartRate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="72">
+                                </div>
+                                <button onclick="recordBP()" class="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors">
+                                    Record Blood Pressure
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Blood Sugar Tracker -->
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4 text-blue-600">
+                                <i class="fas fa-tint mr-2"></i>Blood Sugar Levels
+                            </h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Blood Sugar (mg/dL)</label>
+                                    <input type="number" id="bloodSugar" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="100">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Measurement Type</label>
+                                    <select id="sugarType" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="fasting">Fasting (ناشتہ)</option>
+                                        <option value="random">Random</option>
+                                        <option value="post-meal">Post Meal (کھانے کے بعد)</option>
+                                        <option value="hba1c">HbA1c</option>
+                                    </select>
+                                </div>
+                                <button onclick="recordBloodSugar()" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
+                                    Record Blood Sugar
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Water Intake Tracker -->
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4 text-cyan-600">
+                                <i class="fas fa-glass-water mr-2"></i>Water Intake (پانی کی مقدار)
+                            </h3>
+                            <div class="space-y-4">
+                                <div class="text-center">
+                                    <div class="text-4xl font-bold text-cyan-600 mb-2" id="waterDisplay">0/8</div>
+                                    <p class="text-sm text-gray-600">Glasses of water today</p>
+                                </div>
+                                <div class="flex justify-center space-x-2">
+                                    <button onclick="addWater()" class="bg-cyan-600 text-white px-4 py-2 rounded-md hover:bg-cyan-700 transition-colors">
+                                        <i class="fas fa-plus mr-2"></i>Add Glass
+                                    </button>
+                                    <button onclick="resetWater()" class="bg-gray-400 text-white px-4 py-2 rounded-md hover:bg-gray-500 transition-colors">
+                                        <i class="fas fa-redo mr-2"></i>Reset
+                                    </button>
+                                </div>
+                                <div class="bg-white p-3 rounded-md">
+                                    <div class="flex justify-between text-xs text-gray-600 mb-1">
+                                        <span>Daily Goal</span>
+                                        <span>8 glasses</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div id="waterProgress" class="bg-cyan-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Medications Tab -->
+                <div id="medications" class="tab-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4 text-purple-600">
+                                <i class="fas fa-pills mr-2"></i>Add Medication (دوائیں)
+                            </h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Medicine Name</label>
+                                    <input type="text" id="medName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="e.g., Panadol, Calpol">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Dosage</label>
+                                        <input type="text" id="medDosage" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="500mg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
+                                        <select id="medFrequency" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                            <option value="once">Once daily</option>
+                                            <option value="twice">Twice daily</option>
+                                            <option value="thrice">Three times daily</option>
+                                            <option value="four">Four times daily</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Take with</label>
+                                        <select id="medTiming" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                            <option value="before-food">Before food (کھانے سے پہلے)</option>
+                                            <option value="after-food">After food (کھانے کے بعد)</option>
+                                            <option value="with-food">With food (کھانے کے ساتھ)</option>
+                                            <option value="empty-stomach">Empty stomach (خالی پیٹ)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Duration (days)</label>
+                                        <input type="number" id="medDuration" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="7">
+                                    </div>
+                                </div>
+                                <button onclick="addMedication()" class="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors">
+                                    Add Medication
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4 text-purple-600">
+                                <i class="fas fa-list mr-2"></i>Current Medications
+                            </h3>
+                            <div id="medicationList" class="space-y-3">
+                                <p class="text-gray-500 text-center py-4">No medications added yet</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lifestyle Tab -->
+                <div id="lifestyle" class="tab-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- Exercise Tracker -->
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4 text-green-600">
+                                <i class="fas fa-running mr-2"></i>Exercise & Activity (ورزش)
+                            </h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
+                                    <select id="exerciseType" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                        <option value="walking">Walking (پیدل چلنا)</option>
+                                        <option value="running">Running (دوڑنا)</option>
+                                        <option value="cycling">Cycling (سائیکل چلانا)</option>
+                                        <option value="swimming">Swimming (تیراکی)</option>
+                                        <option value="gym">Gym Workout</option>
+                                        <option value="yoga">Yoga</option>
+                                        <option value="cricket">Cricket</option>
+                                        <option value="football">Football</option>
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
+                                        <input type="number" id="exerciseDuration" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="30">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Calories Burned</label>
+                                        <input type="number" id="caloriesBurned" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="150">
+                                    </div>
+                                </div>
+                                <button onclick="addExercise()" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors">
+                                    Log Exercise
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Sleep Tracker -->
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4 text-indigo-600">
+                                <i class="fas fa-bed mr-2"></i>Sleep Tracker (نیند)
+                            </h3>
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Bedtime</label>
+                                        <input type="time" id="bedtime" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Wake Time</label>
+                                        <input type="time" id="wakeTime" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Sleep Quality</label>
+                                    <select id="sleepQuality" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <option value="excellent">Excellent (بہترین)</option>
+                                        <option value="good">Good (اچھا)</option>
+                                        <option value="fair">Fair (ٹھیک)</option>
+                                        <option value="poor">Poor (خراب)</option>
+                                    </select>
+                                </div>
+                                <button onclick="recordSleep()" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors">
+                                    Record Sleep
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Prayer Times (Special for Pakistan) -->
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4 text-yellow-600">
+                                <i class="fas fa-moon mr-2"></i>Prayer Times (نماز کے اوقات)
+                            </h3>
+                            <div class="space-y-3" id="prayerTimes">
+                                <div class="flex justify-between items-center p-3 bg-white rounded-md">
+                                    <span class="font-medium">Fajr (فجر)</span>
+                                    <span class="text-yellow-600" id="fajrTime">05:30 AM</span>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-white rounded-md">
+                                    <span class="font-medium">Dhuhr (ظہر)</span>
+                                    <span class="text-yellow-600" id="dhuhrTime">12:30 PM</span>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-white rounded-md">
+                                    <span class="font-medium">Asr (عصر)</span>
+                                    <span class="text-yellow-600" id="asrTime">04:00 PM</span>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-white rounded-md">
+                                    <span class="font-medium">Maghrib (مغرب)</span>
+                                    <span class="text-yellow-600" id="maghribTime">06:45 PM</span>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-white rounded-md">
+                                    <span class="font-medium">Isha (عشاء)</span>
+                                    <span class="text-yellow-600" id="ishaTime">08:00 PM</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Diet Tracker -->
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4 text-orange-600">
+                                <i class="fas fa-utensils mr-2"></i>Diet Tracker (خوراک)
+                            </h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Meal Type</label>
+                                    <select id="mealType" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                        <option value="breakfast">Breakfast (ناشتہ)</option>
+                                        <option value="lunch">Lunch (دوپہر کا کھانا)</option>
+                                        <option value="dinner">Dinner (رات کا کھانا)</option>
+                                        <option value="snack">Snack (نان وائی)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Food Items</label>
+                                    <input type="text" id="foodItems" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g., Roti, Rice, Daal, Chicken">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Calories</label>
+                                    <input type="number" id="mealCalories" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="400">
+                                </div>
+                                <button onclick="addMeal()" class="w-full bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 transition-colors">
+                                    Log Meal
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Appointments Tab -->
+                <div id="appointments" class="tab-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4 text-blue-600">
+                                <i class="fas fa-calendar-plus mr-2"></i>Schedule Appointment
+                            </h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Doctor/Hospital Name</label>
+                                    <input type="text" id="doctorName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Dr. Ahmed Ali - Shaukat Khanum Hospital">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Specialty</label>
+                                    <select id="doctorSpecialty" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="general">General Physician</option>
+                                        <option value="cardiologist">Cardiologist (دل کا ڈاکٹر)</option>
+                                        <option value="diabetologist">Diabetologist (ذیابیطس)</option>
+                                        <option value="orthopedic">Orthopedic (ہڈیوں کا ڈاکٹر)</option>
+                                        <option value="gynecologist">Gynecologist (خواتین کا ڈاکٹر)</option>
+                                        <option value="pediatric">Pediatric (بچوں کا ڈاکٹر)</option>
+                                        <option value="dermatologist">Dermatologist (جلدی امراض)</option>
+                                        <option value="neurologist">Neurologist (اعصابی امراض)</option>
+                                        <option value="psychiatrist">Psychiatrist (نفسیاتی ڈاکٹر)</option>
+                                        <option value="dentist">Dentist (دانتوں کا ڈاکٹر)</option>
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                                        <input type="date" id="appointmentDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                                        <input type="time" id="appointmentTime" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                                    <select id="appointmentCity" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="lahore">Lahore</option>
+                                        <option value="karachi">Karachi</option>
+                                        <option value="islamabad">Islamabad</option>
+                                        <option value="faisalabad">Faisalabad</option>
+                                        <option value="rawalpindi">Rawalpindi</option>
+                                        <option value="multan">Multan</option>
+                                        <option value="gujranwala">Gujranwala</option>
+                                        <option value="sialkot">Sialkot</option>
+                                        <option value="peshawar">Peshawar</option>
+                                        <option value="quetta">Quetta</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                                    <textarea id="appointmentNotes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Reason for visit, symptoms, etc."></textarea>
+                                </div>
+                                <button onclick="addAppointment()" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
+                                    Schedule Appointment
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4 text-blue-600">
+                                <i class="fas fa-calendar-alt mr-2"></i>Upcoming Appointments
+                            </h3>
+                            <div id="appointmentList" class="space-y-3">
+                                <p class="text-gray-500 text-center py-4">No appointments scheduled</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Emergency Contacts Section -->
+                    <div class="mt-8 bg-red-50 border border-red-200 rounded-lg p-6">
+                        <h3 class="text-lg font-semibold mb-4 text-red-600">
+                            <i class="fas fa-phone-alt mr-2"></i>Emergency Contacts (ہنگامی رابطے)
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div class="bg-white p-4 rounded-lg text-center">
+                                <i class="fas fa-ambulance text-red-600 text-2xl mb-2"></i>
+                                <p class="font-semibold">Emergency</p>
+                                <p class="text-red-600 font-bold">1122</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg text-center">
+                                <i class="fas fa-hospital text-blue-600 text-2xl mb-2"></i>
+                                <p class="font-semibold">Fire Brigade</p>
+                                <p class="text-blue-600 font-bold">16</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg text-center">
+                                <i class="fas fa-shield-alt text-green-600 text-2xl mb-2"></i>
+                                <p class="font-semibold">Police</p>
+                                <p class="text-green-600 font-bold">15</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg text-center">
+                                <i class="fas fa-info-circle text-purple-600 text-2xl mb-2"></i>
+                                <p class="font-semibold">Helpline</p>
+                                <p class="text-purple-600 font-bold">1166</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reports Tab -->
+                <div id="reports" class="tab-content hidden">
+                    <div class="space-y-6">
+                        <!-- Health Summary Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-6">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-blue-100 text-sm">Total Records</p>
+                                        <p class="text-3xl font-bold" id="totalRecords">0</p>
+                                    </div>
+                                    <i class="fas fa-chart-bar text-blue-200 text-3xl"></i>
+                                </div>
+                            </div>
+                            <div class="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg p-6">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-green-100 text-sm">Health Score</p>
+                                        <p class="text-3xl font-bold" id="healthScore">85%</p>
+                                    </div>
+                                    <i class="fas fa-heart text-green-200 text-3xl"></i>
+                                </div>
+                            </div>
+                            <div class="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-6">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-purple-100 text-sm">Days Tracked</p>
+                                        <p class="text-3xl font-bold" id="daysTracked">1</p>
+                                    </div>
+                                    <i class="fas fa-calendar text-purple-200 text-3xl"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Export Options -->
+                        <div class="bg-white rounded-lg shadow-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800">
+                                <i class="fas fa-download mr-2"></i>Export Health Data
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <button onclick="exportToPDF()" class="flex items-center justify-center p-4 border border-red-300 rounded-lg hover:bg-red-50 transition-colors">
+                                    <i class="fas fa-file-pdf text-red-600 mr-2"></i>
+                                    <span class="text-red-600 font-medium">Export PDF</span>
+                                </button>
+                                <button onclick="exportToExcel()" class="flex items-center justify-center p-4 border border-green-300 rounded-lg hover:bg-green-50 transition-colors">
+                                    <i class="fas fa-file-excel text-green-600 mr-2"></i>
+                                    <span class="text-green-600 font-medium">Export Excel</span>
+                                </button>
+                                <button onclick="shareData()" class="flex items-center justify-center p-4 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors">
+                                    <i class="fas fa-share text-blue-600 mr-2"></i>
+                                    <span class="text-blue-600 font-medium">Share Data</span>
+                                </button>
+                                <button onclick="printReport()" class="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <i class="fas fa-print text-gray-600 mr-2"></i>
+                                    <span class="text-gray-600 font-medium">Print Report</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity Log -->
+                        <div class="bg-white rounded-lg shadow-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800">
+                                <i class="fas fa-history mr-2"></i>Recent Activity (حالیہ سرگرمی)
+                            </h3>
+                            <div id="activityLog" class="space-y-3">
+                                <p class="text-gray-500 text-center py-4">No activities recorded yet</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-12 py-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Pakistan Health Tracker</h4>
+                    <p class="text-gray-300 text-sm">Your comprehensive health management solution designed specifically for Pakistan's healthcare needs.</p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Important Links</h4>
+                    <ul class="space-y-2 text-sm text-gray-300">
+                        <li><a href="#" class="hover:text-white">Ministry of Health Pakistan</a></li>
+                        <li><a href="#" class="hover:text-white">WHO Pakistan</a></li>
+                        <li><a href="#" class="hover:text-white">Pakistan Medical Association</a></li>
+                        <li><a href="#" class="hover:text-white">Drug Regulatory Authority</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Health Tips</h4>
+                    <ul class="space-y-2 text-sm text-gray-300">
+                        <li>• Drink 8-10 glasses of water daily</li>
+                        <li>• Exercise for 30 minutes regularly</li>
+                        <li>• Get 7-8 hours of sleep</li>
+                        <li>• Regular health checkups</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-sm text-gray-400">
+                <p>&copy; 2025 Pakistan Health Tracker. Designed for the people of Pakistan with ❤️</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Global variables
+        let healthData = {
+            vitals: [],
+            medications: [],
+            exercises: [],
+            sleep: [],
+            meals: [],
+            appointments: [],
+            waterIntake: 0,
+            activities: []
+        };
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeTabs();
+            updateTime();
+            setInterval(updateTime, 1000);
+            loadSavedData();
+        });
+
+        // Tab functionality
+        function initializeTabs() {
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabId = button.getAttribute('data-tab');
+                    
+                    // Remove active class from all tabs and contents
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('border-pakistan-green', 'text-pakistan-green');
+                        btn.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    tabContents.forEach(content => content.classList.add('hidden'));
+                    
+                    // Add active class to clicked tab
+                    button.classList.remove('border-transparent', 'text-gray-500');
+                    button.classList.add('border-pakistan-green', 'text-pakistan-green');
+                    
+                    // Show corresponding content
+                    document.getElementById(tabId).classList.remove('hidden');
+                });
+            });
+        }
+
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('en-PK', {
+                timeZone: 'Asia/Karachi',
+                hour12: true,
+                hour: 'numeric',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const dateString = now.toLocaleDateString('en-PK', {
+                timeZone: 'Asia/Karachi',
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+            document.getElementById('currentTime').innerHTML = `${dateString}<br>${timeString}`;
+        }
+
+        // BMI Calculator
+        function calculateBMI() {
+            const height = parseFloat(document.getElementById('height').value);
+            const weight = parseFloat(document.getElementById('weight').value);
+            
+            if (height && weight) {
+                const bmi = (weight / ((height / 100) ** 2)).toFixed(1);
+                let category = '';
+                let color = '';
+                
+                if (bmi < 18.5) {
+                    category = 'Underweight (کم وزن)';
+                    color = 'text-blue-600';
+                } else if (bmi < 25) {
+                    category = 'Normal (نارمل)';
+                    color = 'text-green-600';
+                } else if (bmi < 30) {
+                    category = 'Overweight (زیادہ وزن)';
+                    color = 'text-yellow-600';
+                } else {
+                    category = 'Obese (موٹاپا)';
+                    color = 'text-red-600';
+                }
+                
+                document.getElementById('bmiResultValue').textContent = bmi;
+                document.getElementById('bmiResultCategory').innerHTML = `<span class="${color}">${category}</span>`;
+                document.getElementById('bmiResult').classList.remove('hidden');
+                
+                // Update dashboard
+                document.getElementById('bmiValue').textContent = bmi;
+                document.getElementById('bmiCategory').textContent = category;
+                
+                // Save data
+                healthData.vitals.push({
+                    type: 'bmi',
+                    value: bmi,
+                    category: category,
+                    date: new Date().toISOString()
+                });
+                saveData();
+                addActivity(`BMI calculated: ${bmi} (${category})`);
+            }
+        }
+
+        // Blood Pressure Tracker
+        function recordBP() {
+            const systolic = document.getElementById('systolic').value;
+            const diastolic = document.getElementById('diastolic').value;
+            const heartRate = document.getElementById('heartRate').value;
+            
+            if (systolic && diastolic) {
+                const bpReading = `${systolic}/${diastolic}`;
+                document.getElementById('bpValue').textContent = bpReading;
+                
+                healthData.vitals.push({
+                    type: 'blood_pressure',
+                    systolic: systolic,
+                    diastolic: diastolic,
+                    heartRate: heartRate || null,
+                    date: new Date().toISOString()
+                });
+                saveData();
+                addActivity(`Blood pressure recorded: ${bpReading} mmHg`);
+                
+                // Clear inputs
+                document.getElementById('systolic').value = '';
+                document.getElementById('diastolic').value = '';
+                document.getElementById('heartRate').value = '';
+                
+                showNotification('Blood pressure recorded successfully!', 'success');
+            }
+        }
+
+        // Blood Sugar Tracker
+        function recordBloodSugar() {
+            const bloodSugar = document.getElementById('bloodSugar').value;
+            const sugarType = document.getElementById('sugarType').value;
+            
+            if (bloodSugar) {
+                document.getElementById('sugarValue').textContent = bloodSugar;
+                
+                healthData.vitals.push({
+                    type: 'blood_sugar',
+                    value: bloodSugar,
+                    measurementType: sugarType,
+                    date: new Date().toISOString()
+                });
+                saveData();
+                addActivity(`Blood sugar recorded: ${bloodSugar} mg/dL (${sugarType})`);
+                
+                document.getElementById('bloodSugar').value = '';
+                showNotification('Blood sugar recorded successfully!', 'success');
+            }
+        }
+
+        // Water Intake Tracker
+        function addWater() {
+            healthData.waterIntake++;
+            updateWaterDisplay();
+            addActivity(`Water intake: ${healthData.waterIntake} glasses`);
+            saveData();
+        }
+
+        function resetWater() {
+            healthData.waterIntake = 0;
+            updateWaterDisplay();
+            addActivity('Water intake reset');
+            saveData();
+        }
+
+        function updateWaterDisplay() {
+            document.getElementById('waterValue').textContent = healthData.waterIntake;
+            document.getElementById('waterDisplay').textContent = `${healthData.waterIntake}/8`;
+            
+            const percentage = (healthData.waterIntake / 8) * 100;
+            document.getElementById('waterProgress').style.width = `${Math.min(percentage, 100)}%`;
+        }
+
+        // Medication Management
+        function addMedication() {
+            const name = document.getElementById('medName').value;
+            const dosage = document.getElementById('medDosage').value;
+            const frequency = document.getElementById('medFrequency').value;
+            const timing = document.getElementById('medTiming').value;
+            const duration = document.getElementById('medDuration').value;
+            
+            if (name && dosage) {
+                const medication = {
+                    id: Date.now(),
+                    name: name,
+                    dosage: dosage,
+                    frequency: frequency,
+                    timing: timing,
+                    duration: duration,
+                    startDate: new Date().toISOString(),
+                    active: true
+                };
+                
+                healthData.medications.push(medication);
+                updateMedicationList();
+                saveData();
+                addActivity(`Medication added: ${name} ${dosage}`);
+                
+                // Clear form
+                document.getElementById('medName').value = '';
+                document.getElementById('medDosage').value = '';
+                document.getElementById('medDuration').value = '';
+                
+                showNotification('Medication added successfully!', 'success');
+            }
+        }
+
+        function updateMedicationList() {
+            const list = document.getElementById('medicationList');
+            if (healthData.medications.length === 0) {
+                list.innerHTML = '<p class="text-gray-500 text-center py-4">No medications added yet</p>';
+                return;
+            }
+            
+            list.innerHTML = healthData.medications.map(med => `
+                <div class="bg-white p-4 rounded-lg border border-purple-200">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-semibold text-purple-800">${med.name}</h4>
+                            <p class="text-sm text-gray-600">${med.dosage} - ${med.frequency}</p>
+                            <p class="text-xs text-gray-500">${med.timing}</p>
+                            <p class="text-xs text-gray-400">Duration: ${med.duration} days</p>
+                        </div>
+                        <button onclick="removeMedication(${med.id})" class="text-red-600 hover:text-red-800">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function removeMedication(id) {
+            healthData.medications = healthData.medications.filter(med => med.id !== id);
+            updateMedicationList();
+            saveData();
+            addActivity('Medication removed');
+        }
+
+        // Exercise Tracker
+        function addExercise() {
+            const type = document.getElementById('exerciseType').value;
+            const duration = document.getElementById('exerciseDuration').value;
+            const calories = document.getElementById('caloriesBurned').value;
+            
+            if (type && duration) {
+                const exercise = {
+                    type: type,
+                    duration: parseInt(duration),
+                    calories: parseInt(calories) || 0,
+                    date: new Date().toISOString()
+                };
+                
+                healthData.exercises.push(exercise);
+                saveData();
+                addActivity(`Exercise logged: ${type} for ${duration} minutes`);
+                
+                // Clear form
+                document.getElementById('exerciseDuration').value = '';
+                document.getElementById('caloriesBurned').value = '';
+                
+                showNotification('Exercise logged successfully!', 'success');
+            }
+        }
+
+        // Sleep Tracker
+        function recordSleep() {
+            const bedtime = document.getElementById('bedtime').value;
+            const wakeTime = document.getElementById('wakeTime').value;
+            const quality = document.getElementById('sleepQuality').value;
+            
+            if (bedtime && wakeTime) {
+                // Calculate sleep duration
+                const bedDate = new Date(`2000-01-01 ${bedtime}`);
+                const wakeDate = new Date(`2000-01-01 ${wakeTime}`);
+                if (wakeDate < bedDate) wakeDate.setDate(wakeDate.getDate() + 1);
+                
+                const duration = (wakeDate - bedDate) / (1000 * 60 * 60); // hours
+                
+                const sleep = {
+                    bedtime: bedtime,
+                    wakeTime: wakeTime,
+                    duration: duration.toFixed(1),
+                    quality: quality,
+                    date: new Date().toISOString()
+                };
+                
+                healthData.sleep.push(sleep);
+                saveData();
+                addActivity(`Sleep recorded: ${duration.toFixed(1)} hours (${quality})`);
+                
+                // Clear form
+                document.getElementById('bedtime').value = '';
+                document.getElementById('wakeTime').value = '';
+                
+                showNotification('Sleep data recorded successfully!', 'success');
+            }
+        }
+
+        // Diet Tracker
+        function addMeal() {
+            const type = document.getElementById('mealType').value;
+            const items = document.getElementById('foodItems').value;
+            const calories = document.getElementById('mealCalories').value;
+            
+            if (type && items) {
+                const meal = {
+                    type: type,
+                    items: items,
+                    calories: parseInt(calories) || 0,
+                    date: new Date().toISOString()
+                };
+                
+                healthData.meals.push(meal);
+                saveData();
+                addActivity(`Meal logged: ${type} - ${items}`);
+                
+                // Clear form
+                document.getElementById('foodItems').value = '';
+                document.getElementById('mealCalories').value = '';
+                
+                showNotification('Meal logged successfully!', 'success');
+            }
+        }
+
+        // Appointment Management
+        function addAppointment() {
+            const doctorName = document.getElementById('doctorName').value;
+            const specialty = document.getElementById('doctorSpecialty').value;
+            const date = document.getElementById('appointmentDate').value;
+            const time = document.getElementById('appointmentTime').value;
+            const city = document.getElementById('appointmentCity').value;
+            const notes = document.getElementById('appointmentNotes').value;
+            
+            if (doctorName && date && time) {
+                const appointment = {
+                    id: Date.now(),
+                    doctorName: doctorName,
+                    specialty: specialty,
+                    date: date,
+                    time: time,
+                    city: city,
+                    notes: notes,
+                    status: 'scheduled'
+                };
+                
+                healthData.appointments.push(appointment);
+                updateAppointmentList();
+                saveData();
+                addActivity(`Appointment scheduled with ${doctorName} on ${date}`);
+                
+                // Clear form
+                document.getElementById('doctorName').value = '';
+                document.getElementById('appointmentDate').value = '';
+                document.getElementById('appointmentTime').value = '';
+                document.getElementById('appointmentNotes').value = '';
+                
+                showNotification('Appointment scheduled successfully!', 'success');
+            }
+        }
+
+        function updateAppointmentList() {
+            const list = document.getElementById('appointmentList');
+            if (healthData.appointments.length === 0) {
+                list.innerHTML = '<p class="text-gray-500 text-center py-4">No appointments scheduled</p>';
+                return;
+            }
+            
+            list.innerHTML = healthData.appointments
+                .sort((a, b) => new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time))
+                .map(apt => `
+                <div class="bg-white p-4 rounded-lg border border-blue-200">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-semibold text-blue-800">${apt.doctorName}</h4>
+                            <p class="text-sm text-gray-600">${apt.specialty}</p>
+                            <p class="text-sm text-gray-600">
+                                <i class="fas fa-calendar mr-1"></i>${apt.date} at ${apt.time}
+                            </p>
+                            <p class="text-xs text-gray-500">
+                                <i class="fas fa-map-marker-alt mr-1"></i>${apt.city}
+                            </p>
+                            ${apt.notes ? `<p class="text-xs text-gray-400 mt-1">${apt.notes}</p>` : ''}
+                        </div>
+                        <button onclick="removeAppointment(${apt.id})" class="text-red-600 hover:text-red-800">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function removeAppointment(id) {
+            healthData.appointments = healthData.appointments.filter(apt => apt.id !== id);
+            updateAppointmentList();
+            saveData();
+            addActivity('Appointment cancelled');
+        }
+
+        // Activity Logging
+        function addActivity(activity) {
+            const activityEntry = {
+                description: activity,
+                timestamp: new Date().toLocaleString('en-PK', { timeZone: 'Asia/Karachi' })
+            };
+            
+            healthData.activities.unshift(activityEntry);
+            if (healthData.activities.length > 50) {
+                healthData.activities = healthData.activities.slice(0, 50);
+            }
+            
+            updateActivityLog();
+        }
+
+        function updateActivityLog() {
+            const log = document.getElementById('activityLog');
+            if (healthData.activities.length === 0) {
+                log.innerHTML = '<p class="text-gray-500 text-center py-4">No activities recorded yet</p>';
+                return;
+            }
+            
+            log.innerHTML = healthData.activities.slice(0, 10).map(activity => `
+                <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-2 h-2 bg-pakistan-green rounded-full"></div>
+                    <div class="flex-1">
+                        <p class="text-sm text-gray-700">${activity.description}</p>
+                        <p class="text-xs text-gray-500">${activity.timestamp}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Data Management
+        function saveData() {
+            try {
+                // Store data in memory (not using localStorage as per restrictions)
+                updateDashboardStats();
+            } catch (error) {
+                console.error('Error saving data:', error);
+            }
+        }
+
+        function loadSavedData() {
+            // Initialize with default data since we can't use localStorage
+            updateWaterDisplay();
+            updateMedicationList();
+            updateAppointmentList();
+            updateActivityLog();
+            updateDashboardStats();
+        }
+
+        function updateDashboardStats() {
+            const totalRecords = healthData.vitals.length + healthData.exercises.length + 
+                               healthData.sleep.length + healthData.meals.length;
+            document.getElementById('totalRecords').textContent = totalRecords;
+            document.getElementById('daysTracked').textContent = Math.max(1, Math.ceil(totalRecords / 5));
+        }
+
+        // Export Functions
+        function exportToPDF() {
+            showNotification('PDF export feature coming soon!', 'info');
+        }
+
+        function exportToExcel() {
+            showNotification('Excel export feature coming soon!', 'info');
+        }
+
+        function shareData() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'My Health Data - Pakistan Health Tracker',
+                    text: 'Check out my health progress!',
+                    url: window.location.href
+                });
+            } else {
+                showNotification('Sharing not supported on this device', 'warning');
+            }
+        }
+
+        function printReport() {
+            window.print();
+        }
+
+        // Emergency Contact
+        document.getElementById('emergencyBtn').addEventListener('click', function() {
+            if (confirm('Do you want to call Emergency Services (1122)?')) {
+                // In a real app, this would trigger the phone dialer
+                showNotification('Emergency services contact: 1122', 'warning');
+            }
+        });
+
+        // Notification System
+        function showNotification(message, type = 'success') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full`;
+            
+            const colors = {
+                success: 'bg-green-500 text-white',
+                error: 'bg-red-500 text-white',
+                warning: 'bg-yellow-500 text-black',
+                info: 'bg-blue-500 text-white'
+            };
+            
+            notification.className += ` ${colors[type] || colors.success}`;
+            notification.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        }
+
+        // Health Tips Rotation
+        const healthTips = [
+            "Drink water first thing in the morning (صبح اٹھ کر پانی پیئں)",
+            "Take a 10-minute walk after meals (کھانے کے بعد 10 منٹ ٹہلیں)",
+            "Practice deep breathing daily (روزانہ گہری سانس لیں)",
+            "Eat fruits and vegetables daily (روزانہ پھل اور سبزیاں کھائیں)",
+            "Get regular health checkups (باقاعدگی سے صحت کا چیک اپ کروائیں)",
+            "Maintain good hygiene (صفائی کا خیال رکھیں)",
+            "Exercise regularly (باقاعدگی سے ورزش کریں)",
+            "Get adequate sleep (مناسب نیند لیں)"
+        ];
+
+        let currentTipIndex = 0;
+        function rotateTips() {
+            // This could be implemented to show rotating tips
+            currentTipIndex = (currentTipIndex + 1) % healthTips.length;
+        }
+
+        // Prayer Times (Sample times - in real app, would fetch from API)
+        function updatePrayerTimes() {
+            const prayerTimes = {
+                fajr: "05:30",
+                dhuhr: "12:30", 
+                asr: "16:00",
+                maghrib: "18:45",
+                isha: "20:00"
+            };
+            
+            // Update prayer time display
+            Object.keys(prayerTimes).forEach(prayer => {
+                const element = document.getElementById(prayer + 'Time');
+                if (element) {
+                    element.textContent = prayerTimes[prayer];
+                }
+            });
+        }
+
+        // Weather Integration (Mock data)
+        function updateWeatherInfo() {
+            // In a real app, this would fetch actual weather data
+            const weatherData = {
+                temperature: "28°C",
+                condition: "Partly Cloudy",
+                humidity: "65%",
+                airQuality: "Moderate"
+            };
+            
+            // Could display weather info in a widget
+        }
+
+        // BMI Categories with Urdu translations
+        const bmiCategories = {
+            underweight: { en: "Underweight", ur: "کم وزن", color: "blue" },
+            normal: { en: "Normal", ur: "نارمل", color: "green" },
+            overweight: { en: "Overweight", ur: "زیادہ وزن", color: "yellow" },
+            obese: { en: "Obese", ur: "موٹاپا", color: "red" }
+        };
+
+        // Blood Pressure Categories
+        const bpCategories = {
+            low: { range: "< 90/60", desc: "Low BP (کم بلڈ پریشر)", color: "blue" },
+            normal: { range: "90/60 - 120/80", desc: "Normal (نارمل)", color: "green" },
+            elevated: { range: "120-129/<80", desc: "Elevated (بلند)", color: "yellow" },
+            high1: { range: "130/80 - 139/89", desc: "High Stage 1 (ہائی درجہ 1)", color: "orange" },
+            high2: { range: "≥140/90", desc: "High Stage 2 (ہائی درجہ 2)", color: "red" }
+        };
+
+        // Blood Sugar Categories  
+        const sugarCategories = {
+            low: { range: "< 70", desc: "Low (کم)", color: "blue" },
+            normal: { range: "70-100", desc: "Normal (نارمل)", color: "green" },
+            prediabetic: { range: "100-125", desc: "Pre-diabetic (ذیابیطس سے پہلے)", color: "yellow" },
+            diabetic: { range: "> 125", desc: "Diabetic (ذیابیطس)", color: "red" }
+        };
+
+        // Quick Actions Keyboard Shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case '1':
+                        e.preventDefault();
+                        document.querySelector('[data-tab="vitals"]').click();
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        document.querySelector('[data-tab="medications"]').click();
+                        break;
+                    case '3':
+                        e.preventDefault();
+                        document.querySelector('[data-tab="lifestyle"]').click();
+                        break;
+                    case '4':
+                        e.preventDefault();
+                        document.querySelector('[data-tab="appointments"]').click();
+                        break;
+                    case '5':
+                        e.preventDefault();
+                        document.querySelector('[data-tab="reports"]').click();
+                        break;
+                    case 'w':
+                        e.preventDefault();
+                        addWater();
+                        break;
+                }
+            }
+        });
+
+        // Responsive Design Helpers
+        function checkScreenSize() {
+            const isMobile = window.innerWidth < 768;
+            // Adjust UI for mobile if needed
+            if (isMobile) {
+                // Mobile-specific adjustments
+            }
+        }
+
+        window.addEventListener('resize', checkScreenSize);
+        checkScreenSize(); // Initial check
+
+        // Dark Mode Toggle (Optional)
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
+            // Save preference (would use localStorage in real app)
+        }
+
+        // Language Toggle (English/Urdu)
+        function toggleLanguage() {
+            const isUrdu = document.body.classList.contains('urdu');
+            document.body.classList.toggle('urdu');
+            // In a real app, this would switch all text content
+        }
+
+        // Initialize prayer times and other features
+        updatePrayerTimes();
+        updateWeatherInfo();
+
+        // Set up periodic updates
+        setInterval(() => {
+            updatePrayerTimes();
+            updateWeatherInfo();
+        }, 3600000); // Update every hour
+
+        // Welcome message for new users
+        setTimeout(() => {
+            if (healthData.activities.length === 0) {
+                showNotification('Welcome to Pakistan Health Tracker! Start by calculating your BMI.', 'info');
+            }
+        }, 2000);
+
+        // Auto-save reminder
+        setInterval(() => {
+            if (healthData.activities.length > 0) {
+                showNotification('Your health data is being tracked successfully!', 'success');
+            }
+        }, 300000); // Every 5 minutes
+
+        // Medication Reminders (Mock implementation)
+        function checkMedicationReminders() {
+            healthData.medications.forEach(med => {
+                if (med.active) {
+                    // In a real app, would check time and show notifications
+                }
+            });
+        }
+
+        setInterval(checkMedicationReminders, 60000); // Check every minute
+
+        // End of JavaScript
+    </script>
+</body>
+</html>

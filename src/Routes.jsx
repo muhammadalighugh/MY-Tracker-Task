@@ -3,62 +3,62 @@ import { Route, Routes } from "react-router-dom";
 
 // Pages
 import Home from "./pages/Home";
-// import Profile from "./pages/Profile";
-// import Dashboard from "./pages/Dashboard"; 
+import Profile from "./pages/Profile";
+import Dashboard from "./pages/Dashboard"; 
 
 // Common Components
-// import Signup from "./Components/Auth/Signup";
-// import Signin from "./Components/Auth/Signin";
-// import VerifyEmail from "./Components/Auth/VerifyEmail";
-// import ForgotPassword from "./Components/Auth/ForgotPassword";
-// import PaymentPage from "./Components/Common/PaymentPage";
+import Signup from "./Components/Auth/Signup";
+import Signin from "./Components/Auth/Signin";
+import VerifyEmail from "./Components/Auth/VerifyEmail";
+import ForgotPassword from "./Components/Auth/ForgotPassword";
+import PaymentPage from "./Components/Common/PaymentPage";
 
 // Layouts
-// import DashboardLayout from "./layouts/DashboardLayout";
+import DashboardLayout from "./layouts/DashboardLayout";
 
 // Protected Route
-// import ProtectedRoute  from "./Components/ProtectedRoute";
+import ProtectedRoute  from "./Components/ProtectedRoute";
 
 // Dashboard Components
-// import PrayerTracker from "./Components/DashboardComponents/PrayerTracker";
-// import CodingTracker from "./Components/DashboardComponents/CodingTracker";
-// import WorkoutTracker from "./Components/DashboardComponents/WorkoutTracker";
-// import ReadingTracker from "./Components/DashboardComponents/ReadingTracker";
-// import DietTracker from "./Components/DashboardComponents/HealthTracker";
-// import MobileTracker from "./Components/DashboardComponents/Mobile";
-// import ExpenseTracker from "./Components/DashboardComponents/ExpenseTracker";
-// import CreateTask from "./Components/DashboardComponents/CreateTask";
-// import Notes from "./Components/DashboardComponents/Notes";
-// import Payment from "./Components/DashboardComponents/Payment";
+import PrayerTracker from "./Components/DashboardComponents/PrayerTracker";
+import CodingTracker from "./Components/DashboardComponents/CodingTracker";
+import WorkoutTracker from "./Components/DashboardComponents/WorkoutTracker";
+import ReadingTracker from "./Components/DashboardComponents/ReadingTracker";
+import DietTracker from "./Components/DashboardComponents/HealthTracker/HealthTracker";
+import MobileTracker from "./Components/DashboardComponents/Mobile";
+import ExpenseTracker from "./Components/DashboardComponents/ExpenseTracker";
+import CreateTask from "./Components/DashboardComponents/CreateTask";
+import Notes from "./Components/DashboardComponents/Notes";
+import Payment from "./Components/DashboardComponents/Payment";
 
 // Cards
-// import CardMain from "./Components/CardsCreator/Card";
+import CardMain from "./Components/CardsCreator/Card";
 
 // Not Found
 import NotFoundPage from "./pages/NotFound"; 
-// import AdminPanel from "./Admin/Admin";
-// import AdminLogin from "./Admin/Auth/Login";
-// import Pricing from "./pages/Pricing";
+import AdminPanel from "./Admin/Admin";
+import AdminLogin from "./Admin/Auth/Login";
+import Pricing from "./pages/Pricing";
 // import AdminUsers from "./Admin/AdminUsers";
 
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* Only Public Routes active */}
+      {/* Public Routes */}
       <Route path="/" element={<Home />} />
-      <Route path="*" element={<NotFoundPage />} />
-
-      {/* All other routes are commented out */}
-      {/*
       <Route path="/admin" element={<AdminPanel />} />
       <Route path="/signin" element={<Signin />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/pricing" element={<Pricing />} />
+
       <Route path="/payment" element={<PaymentPage />} />
+      <Route path="*" element={<NotFoundPage />} />
       <Route path="/AdminLogin-admin123" element={<AdminLogin />} />
-      
+      {/* <Route path="/Adminuser" element={<AdminUsers />} /> */}
+
+      {/* Protected Dashboard Route */}
       <Route
         path="/dashboard"
         element={
@@ -81,7 +81,6 @@ export default function AppRoutes() {
         <Route path="expense" element={<ExpenseTracker />} />
         <Route path="diet" element={<DietTracker />} />
       </Route>
-      */}
     </Routes>
   );
 }

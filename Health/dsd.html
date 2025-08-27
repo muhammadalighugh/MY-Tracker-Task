@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthSync - Personal Health Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-shadow { box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .progress-ring { 
+            transform: rotate(-90deg);
+            transition: stroke-dashoffset 0.5s ease-in-out;
+        }
+        .chat-bubble { animation: fadeInUp 0.3s ease-out; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .screen { display: none; }
+        .screen.active { display: block; }
+        .floating-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 50;
+        }
+        .emergency-pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 z-40">
+        <div class="flex justify-around items-center">
+            <button onclick="showScreen('dashboard')" class="nav-btn flex flex-col items-center p-2 text-blue-600">
+                <i class="fas fa-home text-xl"></i>
+                <span class="text-xs mt-1">Home</span>
+            </button>
+            <button onclick="showScreen('logging')" class="nav-btn flex flex-col items-center p-2 text-gray-400">
+                <i class="fas fa-plus-circle text-xl"></i>
+                <span class="text-xs mt-1">Log</span>
+            </button>
+            <button onclick="showScreen('ai-assistant')" class="nav-btn flex flex-col items-center p-2 text-gray-400">
+                <i class="fas fa-robot text-xl"></i>
+                <span class="text-xs mt-1">AI</span>
+            </button>
+            <button onclick="showScreen('reports')" class="nav-btn flex flex-col items-center p-2 text-gray-400">
+                <i class="fas fa-chart-line text-xl"></i>
+                <span class="text-xs mt-1">Reports</span>
+            </button>
+            <button onclick="showScreen('profile')" class="nav-btn flex flex-col items-center p-2 text-gray-400">
+                <i class="fas fa-user text-xl"></i>
+                <span class="text-xs mt-1">Profile</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Emergency Button -->
+    <button onclick="showScreen('emergency')" class="floating-button bg-red-500 text-white p-4 rounded-full shadow-lg emergency-pulse hover:bg-red-600 transition-colors">
+        <i class="fas fa-exclamation-triangle text-xl"></i>
+    </button>
+
+    <!-- Welcome Screen -->
+    <div id="welcome" class="screen active min-h-screen gradient-bg flex flex-col justify-center items-center text-white p-6">
+        <div class="text-center">
+            <div class="mb-8">
+                <i class="fas fa-heartbeat text-6xl mb-4"></i>
+                <h1 class="text-4xl font-bold mb-2">HealthSync</h1>
+                <p class="text-xl opacity-90">Your Personal Health Companion</p>
+            </div>
+            <div class="space-y-4 w-full max-w-sm">
+                <button onclick="showScreen('login')" class="w-full bg-white text-blue-600 py-3 px-6 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                    Get Started
+                </button>
+                <button onclick="showScreen('signup')" class="w-full border-2 border-white text-white py-3 px-6 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors">
+                    Sign Up
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login" class="screen min-h-screen bg-white p-6 pt-16">
+        <div class="max-w-sm mx-auto">
+            <button onclick="showScreen('welcome')" class="mb-6 text-gray-600">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+            <h2 class="text-3xl font-bold mb-8 text-center text-gray-800">Welcome Back</h2>
+            <form class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="your@email.com">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••">
+                </div>
+                <button onclick="showScreen('dashboard')" type="button" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                    Sign In
+                </button>
+                <p class="text-center text-sm text-gray-600">
+                    <a href="#" class="text-blue-600 hover:underline">Forgot Password?</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sign Up Screen -->
+    <div id="signup" class="screen min-h-screen bg-white p-6 pt-16">
+        <div class="max-w-sm mx-auto">
+            <button onclick="showScreen('welcome')" class="mb-6 text-gray-600">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+            <h2 class="text-3xl font-bold mb-8 text-center text-gray-800">Create Account</h2>
+            <form class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="John Doe">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                        <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="25">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="your@email.com">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Height (cm)</label>
+                        <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="175">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
+                        <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="70">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                    <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option>Select Gender</option>
+                        <option>Male</option>
+                        <option>Female</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Emergency Contact</label>
+                    <input type="tel" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="+1 234 567 8900">
+                </div>
+                <button onclick="showScreen('dashboard')" type="button" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                    Create Account
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard Screen -->
+    <div id="dashboard" class="screen p-6 pb-20">
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Good Morning, John!</h1>
+            <p class="text-gray-600">Here's your health summary for today</p>
+        </div>
+
+        <!-- Daily Summary Cards -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-lg card-shadow">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-walking text-blue-500 mr-2"></i>
+                    <h3 class="font-semibold text-gray-700">Steps</h3>
+                </div>
+                <p class="text-2xl font-bold text-gray-800">8,247</p>
+                <p class="text-sm text-gray-500">Goal: 10,000</p>
+                <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                    <div class="bg-blue-500 h-2 rounded-full" style="width: 82%"></div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-4 rounded-lg card-shadow">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-fire text-orange-500 mr-2"></i>
+                    <h3 class="font-semibold text-gray-700">Calories</h3>
+                </div>
+                <p class="text-2xl font-bold text-gray-800">1,847</p>
+                <p class="text-sm text-gray-500">Goal: 2,000</p>
+                <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                    <div class="bg-orange-500 h-2 rounded-full" style="width: 92%"></div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-4 rounded-lg card-shadow">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-bed text-purple-500 mr-2"></i>
+                    <h3 class="font-semibold text-gray-700">Sleep</h3>
+                </div>
+                <p class="text-2xl font-bold text-gray-800">7h 23m</p>
+                <p class="text-sm text-gray-500">Goal: 8h</p>
+                <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                    <div class="bg-purple-500 h-2 rounded-full" style="width: 92%"></div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-4 rounded-lg card-shadow">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-tint text-blue-400 mr-2"></i>
+                    <h3 class="font-semibold text-gray-700">Water</h3>
+                </div>
+                <p class="text-2xl font-bold text-gray-800">6/8</p>
+                <p class="text-sm text-gray-500">glasses</p>
+                <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                    <div class="bg-blue-400 h-2 rounded-full" style="width: 75%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Health Trends Chart -->
+        <div class="bg-white p-4 rounded-lg card-shadow mb-6">
+            <h3 class="font-semibold text-gray-700 mb-4">Weekly Trends</h3>
+            <canvas id="trendsChart" width="400" height="200"></canvas>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white p-4 rounded-lg card-shadow">
+            <h3 class="font-semibold text-gray-700 mb-4">Quick Log</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="showLoggingTab('vitals')" class="flex items-center justify-center p-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors">
+                    <i class="fas fa-heartbeat mr-2"></i>
+                    Vitals
+                </button>
+                <button onclick="showLoggingTab('nutrition')" class="flex items-center justify-center p-3 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors">
+                    <i class="fas fa-utensils mr-2"></i>
+                    Meal
+                </button>
+                <button onclick="showLoggingTab('exercise')" class="flex items-center justify-center p-3 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
+                    <i class="fas fa-dumbbell mr-2"></i>
+                    Exercise
+                </button>
+                <button onclick="showLoggingTab('water')" class="flex items-center justify-center p-3 bg-cyan-50 text-cyan-600 rounded-lg hover:bg-cyan-100 transition-colors">
+                    <i class="fas fa-glass-water mr-2"></i>
+                    Water
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health Logging Screen -->
+    <div id="logging" class="screen p-6 pb-20">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">Health Logging</h1>
+        
+        <!-- Logging Tabs -->
+        <div class="flex space-x-2 mb-6 overflow-x-auto">
+            <button onclick="showLoggingTab('vitals')" class="log-tab px-4 py-2 rounded-full bg-blue-600 text-white whitespace-nowrap">Vitals</button>
+            <button onclick="showLoggingTab('nutrition')" class="log-tab px-4 py-2 rounded-full bg-gray-200 text-gray-600 whitespace-nowrap">Nutrition</button>
+            <button onclick="showLoggingTab('exercise')" class="log-tab px-4 py-2 rounded-full bg-gray-200 text-gray-600 whitespace-nowrap">Exercise</button>
+            <button onclick="showLoggingTab('water')" class="log-tab px-4 py-2 rounded-full bg-gray-200 text-gray-600 whitespace-nowrap">Water</button>
+            <button onclick="showLoggingTab('sleep')" class="log-tab px-4 py-2 rounded-full bg-gray-200 text-gray-600 whitespace-nowrap">Sleep</button>
+        </div>
+
+        <!-- Vitals Tab -->
+        <div id="vitals-tab" class="log-content">
+            <div class="bg-white p-6 rounded-lg card-shadow">
+                <h3 class="font-semibold text-gray-700 mb-4">Log Vitals</h3>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
+                            <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="70.5">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">BMI</label>
+                            <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50" placeholder="22.9" readonly>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Systolic BP</label>
+                            <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="120">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Diastolic BP</label>
+                            <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="80">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Heart Rate (BPM)</label>
+                            <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="72">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Blood Sugar (mg/dL)</label>
+                            <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="95">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Oxygen Level (%)</label>
+                        <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="98">
+                    </div>
+                    <button class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                        Save Vitals
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nutrition Tab -->
+        <div id="nutrition-tab" class="log-content hidden">
+            <div class="bg-white p-6 rounded-lg card-shadow">
+                <h3 class="font-semibold text-gray-700 mb-4">Log Nutrition</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Meal Type</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option>Breakfast</option>
+                            <option>Lunch</option>
+                            <option>Dinner</option>
+                            <option>Snack</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Food Item</label>
+                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Chicken breast, rice, vegetables">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Calories</label>
+                            <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="450">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Protein (g)</label>
+                            <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="35">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Carbs (g)</label>
+                            <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="45">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Fats (g)</label>
+                            <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="15">
+                        </div>
+                    </div>
+                    <button class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors">
+                        Add to Food Log
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exercise Tab -->
+        <div id="exercise-tab" class="log-content hidden">
+            <div class="bg-white p-6 rounded-lg card-shadow">
+                <h3 class="font-semibold text-gray-700 mb-4">Log Exercise</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Exercise Type</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option>Running</option>
+                            <option>Walking</option>
+                            <option>Cycling</option>
+                            <option>Swimming</option>
+                            <option>Weight Training</option>
+                            <option>Yoga</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
+                            <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="45">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Calories Burned</label>
+                            <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="350">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Intensity</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option>Low</option>
+                            <option>Moderate</option>
+                            <option>High</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2" placeholder="How did you feel during this workout?"></textarea>
+                    </div>
+                    <button class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                        Log Exercise
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Water Tab -->
+        <div id="water-tab" class="log-content hidden">
+            <div class="bg-white p-6 rounded-lg card-shadow">
+                <h3 class="font-semibold text-gray-700 mb-4">Water Intake</h3>
+                <div class="text-center mb-6">
+                    <div class="relative w-32 h-32 mx-auto mb-4">
+                        <svg class="w-32 h-32 transform -rotate-90">
+                            <circle cx="64" cy="64" r="56" stroke="#e5e7eb" stroke-width="8" fill="none"/>
+                            <circle cx="64" cy="64" r="56" stroke="#06b6d4" stroke-width="8" fill="none" 
+                                    stroke-dasharray="351.86" stroke-dashoffset="87.96"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-gray-800">6</div>
+                                <div class="text-sm text-gray-500">of 8 glasses</div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-gray-600">Daily Goal: 2000ml</p>
+                </div>
+                <div class="grid grid-cols-3 gap-3 mb-6">
+                    <button onclick="addWater(250)" class="p-4 bg-cyan-50 text-cyan-600 rounded-lg hover:bg-cyan-100 transition-colors">
+                        <i class="fas fa-glass-water text-2xl mb-2"></i>
+                        <div class="text-sm">250ml</div>
+                    </button>
+                    <button onclick="addWater(500)" class="p-4 bg-cyan-50 text-cyan-600 rounded-lg hover:bg-cyan-100 transition-colors">
+                        <i class="fas fa-bottle-water text-2xl mb-2"></i>
+                        <div class="text-sm">500ml</div>
+                    </button>
+                    <button onclick="addWater(1000)" class="p-4 bg-cyan-50 text-cyan-600 rounded-lg hover:bg-cyan-100 transition-colors">
+                        <i class="fas fa-jug-detergent text-2xl mb-2"></i>
+                        <div class="text-sm">1000ml</div>
+                    </button>
+                </div>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Custom Amount (ml)</label>
+                        <input type="number" id="customWater" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="350">
+                    </div>
+                    <button onclick="addCustomWater()" class="w-full bg-cyan-600 text-white py-3 rounded-lg font-semibold hover:bg-cyan-700 transition-colors">
+                        Add Water
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sleep Tab -->
+        <div id="sleep-tab" class="log-content hidden">
+            <div class="bg-white p-6 rounded-lg card-shadow">
+                <h3 class="font-semibold text-gray-700 mb-4">Log Sleep</h3>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Bedtime</label>
+                            <input type="time" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="23:00">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Wake Time</label>
+                            <input type="time" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="07:00">
+                        </div>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-purple-600">8h 0m</div>
+                            <div class="text-sm text-purple-500">Total Sleep Duration</div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Sleep Quality</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option>Excellent</option>
+                            <option>Good</option>
+                            <option>Fair</option>
+                            <option>Poor</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2" placeholder="How did you sleep?"></textarea>
+                    </div>
+                    <button class="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors">
+                        Log Sleep
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Assistant Screen -->
+    <div id="ai-assistant" class="screen p-6 pb-20">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">AI Health Assistant</h1>
+        
+        <!-- Chat Messages -->
+        <div id="chat-messages" class="space-y-4 mb-6 max-h-96 overflow-y-auto">
+            <div class="chat-bubble">
+                <div class="flex items-start">
+                    <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mr-3">
+                        <i class="fas fa-robot text-white text-sm"></i>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-lg max-w-xs">
+                        <p class="text-sm">Hello! I'm your AI health assistant. Based on your recent data, I notice your blood pressure readings have been slightly elevated this week. Would you like some recommendations?</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-bubble">
+                <div class="flex items-start justify-end">
+                    <div class="bg-gray-100 p-4 rounded-lg max-w-xs">
+                        <p class="text-sm">Yes, please give me some advice.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-bubble">
+                <div class="flex items-start">
+                    <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mr-3">
+                        <i class="fas fa-robot text-white text-sm"></i>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-lg max-w-xs">
+                        <p class="text-sm">Here are some recommendations:</p>
+                        <ul class="text-sm mt-2 space-y-1">
+                            <li>• Reduce sodium intake to <2300mg/day</li>
+                            <li>• Aim for 30min moderate exercise daily</li>
+                            <li>• Practice stress management techniques</li>
+                            <li>• Monitor BP daily at same time</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Health Insights -->
+        <div class="bg-white p-4 rounded-lg card-shadow mb-6">
+            <h3 class="font-semibold text-gray-700 mb-3">Weekly Health Insights</h3>
+            <div class="space-y-3">
+                <div class="flex items-center p-3 bg-yellow-50 rounded-lg">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 mr-3"></i>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-yellow-800">Blood Pressure Alert</p>
+                        <p class="text-xs text-yellow-600">Average: 135/88 (Above Normal)</p>
+                    </div>
+                </div>
+                <div class="flex items-center p-3 bg-green-50 rounded-lg">
+                    <i class="fas fa-check-circle text-green-600 mr-3"></i>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-green-800">Great Sleep Pattern</p>
+                        <p class="text-xs text-green-600">Consistent 7-8 hours nightly</p>
+                    </div>
+                </div>
+                <div class="flex items-center p-3 bg-blue-50 rounded-lg">
+                    <i class="fas fa-info-circle text-blue-600 mr-3"></i>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-blue-800">Hydration Goal</p>
+                        <p class="text-xs text-blue-600">Try to reach 8 glasses daily</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="bg-white p-4 rounded-lg card-shadow">
+            <div class="flex items-center space-x-2">
+                <input type="text" id="chat-input" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ask me about your health...">
+                <button onclick="sendMessage()" class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+                <button class="p-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 transition-colors">
+                    <i class="fas fa-microphone"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Screen -->
+    <div id="reports" class="screen p-6 pb-20">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">Health Reports</h1>
+        
+        <!-- Time Period Selector -->
+        <div class="flex space-x-2 mb-6">
+            <button onclick="showReportPeriod('weekly')" class="period-btn px-4 py-2 rounded-full bg-blue-600 text-white">Weekly</button>
+            <button onclick="showReportPeriod('monthly')" class="period-btn px-4 py-2 rounded-full bg-gray-200 text-gray-600">Monthly</button>
+            <button onclick="showReportPeriod('yearly')" class="period-btn px-4 py-2 rounded-full bg-gray-200 text-gray-600">Yearly</button>
+        </div>
+
+        <!-- Report Cards -->
+        <div class="space-y-4 mb-6">
+            <div class="bg-white p-4 rounded-lg card-shadow">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-semibold text-gray-700">Weight Trend</h3>
+                    <span class="text-green-600 text-sm font-medium">↓ -2.3 kg</span>
+                </div>
+                <canvas id="weightChart" width="400" height="150"></canvas>
+                <div class="flex justify-between text-xs text-gray-500 mt-2">
+                    <span class="flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>Normal Range</span>
+                    <span class="flex items-center"><span class="w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>Goal: 68kg</span>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-lg card-shadow">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-semibold text-gray-700">Blood Pressure</h3>
+                    <span class="text-yellow-600 text-sm font-medium">⚠ Elevated</span>
+                </div>
+                <canvas id="bpChart" width="400" height="150"></canvas>
+                <div class="flex justify-between text-xs text-gray-500 mt-2">
+                    <span class="flex items-center"><span class="w-2 h-2 bg-red-500 rounded-full mr-1"></span>Systolic</span>
+                    <span class="flex items-center"><span class="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>Diastolic</span>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-lg card-shadow">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-semibold text-gray-700">Activity Summary</h3>
+                    <span class="text-green-600 text-sm font-medium">↑ +15%</span>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-600">52,847</div>
+                        <div class="text-sm text-gray-500">Steps/week</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-orange-600">2,450</div>
+                        <div class="text-sm text-gray-500">Calories/day</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Options -->
+        <div class="bg-white p-4 rounded-lg card-shadow">
+            <h3 class="font-semibold text-gray-700 mb-3">Export Report</h3>
+            <div class="flex space-x-3">
+                <button class="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-red-700 transition-colors">
+                    <i class="fas fa-file-pdf mr-2"></i>PDF
+                </button>
+                <button class="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                    <i class="fas fa-file-csv mr-2"></i>CSV
+                </button>
+                <button class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-share mr-2"></i>Share
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Screen -->
+    <div id="notifications" class="screen p-6 pb-20">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">Reminders & Notifications</h1>
+        
+        <!-- Daily Reminders -->
+        <div class="bg-white p-4 rounded-lg card-shadow mb-6">
+            <h3 class="font-semibold text-gray-700 mb-4">Today's Reminders</h3>
+            <div class="space-y-3">
+                <div class="flex items-center p-3 bg-blue-50 rounded-lg">
+                    <i class="fas fa-glass-water text-blue-600 mr-3"></i>
+                    <div class="flex-1">
+                        <p class="font-medium text-blue-800">Drink Water</p>
+                        <p class="text-xs text-blue-600">10:00 AM - Stay hydrated!</p>
+                    </div>
+                    <button class="text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-check"></i>
+                    </button>
+                </div>
+                
+                <div class="flex items-center p-3 bg-green-50 rounded-lg">
+                    <i class="fas fa-utensils text-green-600 mr-3"></i>
+                    <div class="flex-1">
+                        <p class="font-medium text-green-800">Log Lunch</p>
+                        <p class="text-xs text-green-600">12:30 PM - Don't forget to log your meal</p>
+                    </div>
+                    <button class="text-green-600 hover:text-green-800">
+                        <i class="fas fa-check"></i>
+                    </button>
+                </div>
+                
+                <div class="flex items-center p-3 bg-orange-50 rounded-lg">
+                    <i class="fas fa-heartbeat text-orange-600 mr-3"></i>
+                    <div class="flex-1">
+                        <p class="font-medium text-orange-800">Check Blood Pressure</p>
+                        <p class="text-xs text-orange-600">6:00 PM - Evening vitals check</p>
+                    </div>
+                    <button class="text-orange-600 hover:text-orange-800">
+                        <i class="fas fa-check"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Reminders -->
+        <div class="bg-white p-4 rounded-lg card-shadow mb-6">
+            <h3 class="font-semibold text-gray-700 mb-4">Add Custom Reminder</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Reminder Type</label>
+                    <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option>Medication</option>
+                        <option>Exercise</option>
+                        <option>Water</option>
+                        <option>Meal Logging</option>
+                        <option>Vitals Check</option>
+                        <option>Custom</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                    <input type="time" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                    <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Take your medication">
+                </div>
+                <button class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                    Add Reminder
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Screen -->
+    <div id="profile" class="screen p-6 pb-20">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">Profile & Settings</h1>
+        
+        <!-- Profile Info -->
+        <div class="bg-white p-6 rounded-lg card-shadow mb-6">
+            <div class="flex items-center mb-4">
+                <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-user text-white text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800">John Doe</h3>
+                    <p class="text-gray-600">john.doe@email.com</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                    <span class="text-gray-500">Age:</span>
+                    <span class="font-medium text-gray-800 ml-2">28 years</span>
+                </div>
+                <div>
+                    <span class="text-gray-500">Gender:</span>
+                    <span class="font-medium text-gray-800 ml-2">Male</span>
+                </div>
+                <div>
+                    <span class="text-gray-500">Height:</span>
+                    <span class="font-medium text-gray-800 ml-2">175 cm</span>
+                </div>
+                <div>
+                    <span class="text-gray-500">Weight:</span>
+                    <span class="font-medium text-gray-800 ml-2">70 kg</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Health Goals -->
+        <div class="bg-white p-6 rounded-lg card-shadow mb-6">
+            <h3 class="font-semibold text-gray-700 mb-4">Health Goals</h3>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">Daily Steps</span>
+                    <div class="flex items-center">
+                        <input type="number" value="10000" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm">
+                        <button class="ml-2 text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">Daily Calories</span>
+                    <div class="flex items-center">
+                        <input type="number" value="2000" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm">
+                        <button class="ml-2 text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">Target Weight</span>
+                    <div class="flex items-center">
+                        <input type="number" value="68" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm">
+                        <span class="text-sm text-gray-500 ml-1">kg</span>
+                        <button class="ml-2 text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">Water Goal</span>
+                    <div class="flex items-center">
+                        <input type="number" value="8" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm">
+                        <span class="text-sm text-gray-500 ml-1">glasses</span>
+                        <button class="ml-2 text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="bg-white p-6 rounded-lg card-shadow mb-6">
+            <h3 class="font-semibold text-gray-700 mb-4">Settings</h3>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">Notifications</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">Dark Mode</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">Data Backup</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Emergency Contact -->
+        <div class="bg-white p-6 rounded-lg card-shadow mb-6">
+            <h3 class="font-semibold text-gray-700 mb-4">Emergency Contact</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <input type="text" value="Jane Doe" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <input type="tel" value="+1 234 567 8901" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Relationship</label>
+                    <input type="text" value="Spouse" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Actions -->
+        <div class="space-y-3">
+            <button class="w-full bg-gray-600 text-white py-3 rounded-lg font-semibold hover:bg-gray-700 transition-colors">
+                Edit Profile
+            </button>
+            <button class="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
+                Sign Out
+            </button>
+        </div>
+    </div>
+
+    <!-- Emergency Screen -->
+    <div id="emergency" class="screen min-h-screen bg-red-600 text-white p-6 pt-16">
+        <button onclick="showScreen('dashboard')" class="mb-6 text-white">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+        
+        <div class="text-center mb-8">
+            <i class="fas fa-exclamation-triangle text-6xl mb-4"></i>
+            <h1 class="text-3xl font-bold mb-2">Emergency</h1>
+            <p class="text-xl">Get immediate help</p>
+        </div>
+
+        <!-- Emergency Actions -->
+        <div class="space-y-4 mb-8">
+            <button class="w-full bg-white text-red-600 py-4 px-6 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors">
+                <i class="fas fa-phone mr-3"></i>Call Emergency (911)
+            </button>
+            <button class="w-full bg-red-500 text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-red-400 transition-colors">
+                <i class="fas fa-user-md mr-3"></i>Contact Doctor
+            </button>
+            <button class="w-full bg-red-500 text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-red-400 transition-colors">
+                <i class="fas fa-heart mr-3"></i>Alert Emergency Contact
+            </button>
+        </div>
+
+        <!-- Health Info Summary -->
+        <div class="bg-red-500 p-4 rounded-lg">
+            <h3 class="font-bold mb-3">Quick Health Summary</h3>
+            <div class="text-sm space-y-1">
+                <p><strong>Name:</strong> John Doe, Age 28</p>
+                <p><strong>Blood Type:</strong> O+</p>
+                <p><strong>Allergies:</strong> Penicillin</p>
+                <p><strong>Conditions:</strong> Hypertension</p>
+                <p><strong>Emergency Contact:</strong> Jane Doe (+1 234 567 8901)</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentScreen = 'welcome';
+        let currentLogTab = 'vitals';
+        let currentReportPeriod = 'weekly';
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            showScreen('welcome');
+        });
+
+        // Screen Navigation
+        function showScreen(screenName) {
+            // Hide all screens
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            // Show selected screen
+            document.getElementById(screenName).classList.add('active');
+            currentScreen = screenName;
+            
+            // Update navigation buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-blue-600');
+                btn.classList.add('text-gray-400');
+            });
+            
+            // Highlight active nav button
+            const navMap = {
+                'dashboard': 0,
+                'logging': 1,
+                'ai-assistant': 2,
+                'reports': 3,
+                'profile': 4
+            };
+            
+            if (navMap[screenName] !== undefined) {
+                const activeBtn = document.querySelectorAll('.nav-btn')[navMap[screenName]];
+                activeBtn.classList.remove('text-gray-400');
+                activeBtn.classList.add('text-blue-600');
+            }
+        }
+
+        // Logging Tab Navigation
+        function showLoggingTab(tabName) {
+            showScreen('logging');
+            
+            // Hide all log content
+            document.querySelectorAll('.log-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName + '-tab').classList.remove('hidden');
+            
+            // Update tab buttons
+            document.querySelectorAll('.log-tab').forEach(tab => {
+                tab.classList.remove('bg-blue-600', 'text-white');
+                tab.classList.add('bg-gray-200', 'text-gray-600');
+            });
+            
+            // Highlight active tab
+            event.target.classList.remove('bg-gray-200', 'text-gray-600');
+            event.target.classList.add('bg-blue-600', 'text-white');
+            
+            currentLogTab = tabName;
+        }
+
+        // Water Tracker Functions
+        function addWater(amount) {
+            alert(`Added ${amount}ml of water!`);
+            // Update water progress here
+        }
+
+        function addCustomWater() {
+            const amount = document.getElementById('customWater').value;
+            if (amount) {
+                addWater(parseInt(amount));
+                document.getElementById('customWater').value = '';
+            }
+        }
+
+        // Chat Functions
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (message) {
+                // Add user message to chat
+                const chatMessages = document.getElementById('chat-messages');
+                const userMessage = document.createElement('div');
+                userMessage.className = 'chat-bubble';
+                userMessage.innerHTML = `
+                    <div class="flex items-start justify-end">
+                        <div class="bg-gray-100 p-4 rounded-lg max-w-xs">
+                            <p class="text-sm">${message}</p>
+                        </div>
+                    </div>
+                `;
+                chatMessages.appendChild(userMessage);
+                
+                // Simulate AI response
+                setTimeout(() => {
+                    const aiResponse = document.createElement('div');
+                    aiResponse.className = 'chat-bubble';
+                    aiResponse.innerHTML = `
+                        <div class="flex items-start">
+                            <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-robot text-white text-sm"></i>
+                            </div>
+                            <div class="bg-blue-50 p-4 rounded-lg max-w-xs">
+                                <p class="text-sm">Thanks for your question! I'm analyzing your health data to provide personalized recommendations.</p>
+                            </div>
+                        </div>
+                    `;
+                    chatMessages.appendChild(aiResponse);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }, 1000);
+                
+                input.value = '';
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+
+        // Report Period Navigation
+        function showReportPeriod(period) {
+            currentReportPeriod = period;
+            
+            // Update period buttons
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-600');
+            });
+            
+            // Highlight active period
+            event.target.classList.remove('bg-gray-200', 'text-gray-600');
+            event.target.classList.add('bg-blue-600', 'text-white');
+            
+            // Update charts based on period
+            updateReportCharts(period);
+        }
+
+        // Chart Initialization and Updates
+        function initializeCharts() {
+            // Dashboard Trends Chart
+            const trendsCtx = document.getElementById('trendsChart').getContext('2d');
+            new Chart(trendsCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Steps (thousands)',
+                        data: [8.2, 9.5, 7.8, 10.2, 8.9, 11.5, 8.2],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Water (glasses)',
+                        data: [6, 8, 5, 7, 8, 6, 6],
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+
+            // Weight Chart
+            const weightCtx = document.getElementById('weightChart').getContext('2d');
+            new Chart(weightCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                    datasets: [{
+                        label: 'Weight (kg)',
+                        data: [72.5, 71.8, 71.2, 70.2],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 68,
+                            max: 74
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Blood Pressure Chart
+            const bpCtx = document.getElementById('bpChart').getContext('2d');
+            new Chart(bpCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                    datasets: [{
+                        label: 'Systolic',
+                        data: [128, 132, 135, 130],
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Diastolic',
+                        data: [82, 85, 88, 84],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 70,
+                            max: 140
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateReportCharts(period) {
+            // Update chart data based on selected period
+            // This would typically fetch new data from an API
+            console.log(`Updating charts for ${period} view`);
+        }
+
+        // Handle Enter key in chat input
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && e.target.id === 'chat-input') {
+                sendMessage();
+            }
+        });
+
+        // Handle back button for mobile
+        window.addEventListener('popstate', function(event) {
+            if (event.state && event.state.screen) {
+                showScreen(event.state.screen);
+            }
+        });
+
+        // Add screen change to history
+        function addToHistory(screenName) {
+            history.pushState({screen: screenName}, '', `#${screenName}`);
+        }
+
+        // Notification functions
+        function dismissReminder(element) {
+            element.style.opacity = '0.5';
+            element.querySelector('i').className = 'fas fa-check text-green-600';
+            setTimeout(() => {
+                element.remove();
+            }, 1000);
+        }
+
+        // Progressive Web App functionality
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            deferredPrompt = e;
+        });
+
+        // Service Worker registration (if available)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('SW registered: ', registration);
+                }).catch(function(registrationError) {
+                    console.log('SW registration failed: ', registrationError);
+                });
+            });
+        }
+
+        // Simulate real-time data updates
+        function updateDashboardData() {
+            // This would typically fetch real data from sensors or manual input
+            const now = new Date();
+            if (now.getMinutes() % 5 === 0) { // Update every 5 minutes
+                // Update step count, heart rate, etc.
+                console.log('Updating dashboard data...');
+            }
+        }
+
+        // Set up periodic updates
+        setInterval(updateDashboardData, 60000); // Check every minute
+
+        // Haptic feedback for mobile devices
+        function hapticFeedback() {
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }
+
+        // Add haptic feedback to important buttons
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.emergency-pulse') || 
+                e.target.closest('.bg-red-600') ||
+                e.target.closest('.bg-blue-600')) {
+                hapticFeedback();
+            }
+        });
+
+        // Dark mode toggle functionality
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+        }
+
+        // Load saved dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark');
+        }
+
+        // Initialize tooltips and help text
+        function initializeHelp() {
+            const helpTexts = {
+                'bmi': 'BMI is calculated automatically based on your height and weight',
+                'bloodPressure': 'Normal BP is less than 120/80 mmHg',
+                'heartRate': 'Normal resting heart rate is 60-100 BPM',
+                'bloodSugar': 'Normal fasting glucose is 70-99 mg/dL'
+            };
+            
+            // Add help icons and tooltips where needed
+            Object.keys(helpTexts).forEach(key => {
+                const elements = document.querySelectorAll(`[data-help="${key}"]`);
+                elements.forEach(el => {
+                    el.title = helpTexts[key];
+                });
+            });
+        }
+
+        // Voice recognition for chat (if supported)
+        if ('webkitSpeechRecognition' in window) {
+            const recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('chat-input').value = transcript;
+            };
+
+            // Add voice input button functionality
+            document.querySelector('.fa-microphone').parentElement.addEventListener('click', function() {
+                recognition.start();
+                this.classList.add('bg-red-200');
+                setTimeout(() => this.classList.remove('bg-red-200'), 3000);
+            });
+        }
+
+        // Export functionality
+        function exportToPDF() {
+            alert('Generating PDF report... This would normally create a detailed health report.');
+        }
+
+        function exportToCSV() {
+            alert('Exporting to CSV... This would download your health data as a spreadsheet.');
+        }
+
+        function shareReport() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'My Health Report',
+                    text: 'Check out my health progress!',
+                    url: window.location.href
+                });
+            } else {
+                alert('Sharing your health report... This would open share options.');
+            }
+        }
+
+        // Goal tracking and achievements
+        function checkGoalAchievements() {
+            const goals = {
+                steps: { current: 8247, target: 10000 },
+                calories: { current: 1847, target: 2000 },
+                water: { current: 6, target: 8 },
+                sleep: { current: 7.4, target: 8 }
+            };
+
+            Object.keys(goals).forEach(goal => {
+                const progress = (goals[goal].current / goals[goal].target) * 100;
+                if (progress >= 100) {
+                    showAchievement(`🎉 Great job! You've reached your ${goal} goal!`);
+                }
+            });
+        }
+
+        function showAchievement(message) {
+            const achievement = document.createElement('div');
+            achievement.className = 'fixed top-4 left-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 achievement-popup';
+            achievement.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(achievement);
+            
+            setTimeout(() => {
+                if (achievement.parentNode) {
+                    achievement.remove();
+                }
+            }, 5000);
+        }
+
+        // Initialize help system
+        initializeHelp();
+        
+        // Check for achievements on load
+        setTimeout(checkGoalAchievements, 2000);
+    </script>
+</body>
+</html>

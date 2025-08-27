@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthTracker Pro - AI-Powered Health Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .sidebar-transition {
+            transition: transform 0.3s ease-in-out;
+        }
+        .health-metric {
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+        }
+        .ai-chat-bubble {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Header -->
+    <header class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <button id="sidebarToggle" class="lg:hidden p-2 rounded-md hover:bg-gray-100">
+                        <i class="fas fa-bars text-gray-600"></i>
+                    </button>
+                    <div class="flex items-center ml-2 lg:ml-0">
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-heartbeat text-white text-lg"></i>
+                        </div>
+                        <h1 class="ml-3 text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                            HealthTracker Pro
+                        </h1>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <!-- Search -->
+                    <div class="hidden md:block relative">
+                        <input type="text" placeholder="Search health data..." class="w-64 pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                    
+                    <!-- Notifications -->
+                    <button class="relative p-2 rounded-full hover:bg-gray-100">
+                        <i class="fas fa-bell text-gray-600 text-lg"></i>
+                        <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3</span>
+                    </button>
+                    
+                    <!-- Profile -->
+                    <div class="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 rounded-lg p-2">
+                        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face&auto=format" 
+                             alt="Profile" class="w-8 h-8 rounded-full">
+                        <span class="hidden md:block text-sm font-medium text-gray-700">John Doe</span>
+                        <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-xl transform -translate-x-full lg:translate-x-0 sidebar-transition">
+            <div class="flex flex-col h-full pt-16">
+                <!-- Navigation -->
+                <nav class="flex-1 px-4 py-6 space-y-2">
+                    <a href="#" class="nav-item active flex items-center px-4 py-3 text-blue-600 bg-blue-50 rounded-lg font-medium">
+                        <i class="fas fa-tachometer-alt w-5"></i>
+                        <span class="ml-3">Dashboard</span>
+                    </a>
+                    <a href="#" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="fas fa-heartbeat w-5"></i>
+                        <span class="ml-3">Vitals</span>
+                    </a>
+                    <a href="#" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="fas fa-running w-5"></i>
+                        <span class="ml-3">Activity</span>
+                    </a>
+                    <a href="#" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="fas fa-utensils w-5"></i>
+                        <span class="ml-3">Nutrition</span>
+                    </a>
+                    <a href="#" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="fas fa-moon w-5"></i>
+                        <span class="ml-3">Sleep</span>
+                    </a>
+                    <a href="#" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="fas fa-smile w-5"></i>
+                        <span class="ml-3">Mood</span>
+                    </a>
+                    <a href="#" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="fas fa-pills w-5"></i>
+                        <span class="ml-3">Medications</span>
+                    </a>
+                    <a href="#" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="fas fa-chart-line w-5"></i>
+                        <span class="ml-3">Reports</span>
+                    </a>
+                    <a href="#" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="fas fa-robot w-5"></i>
+                        <span class="ml-3">AI Assistant</span>
+                    </a>
+                    <a href="#" class="nav-item flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="fas fa-cog w-5"></i>
+                        <span class="ml-3">Settings</span>
+                    </a>
+                </nav>
+
+                <!-- Health Score -->
+                <div class="px-4 py-6 border-t border-gray-200">
+                    <div class="bg-gradient-to-r from-green-400 to-blue-500 rounded-xl p-4 text-white">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium">Health Score</span>
+                            <i class="fas fa-info-circle text-xs opacity-75"></i>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="text-2xl font-bold">85</div>
+                            <div class="ml-2 text-xs opacity-90">/100</div>
+                        </div>
+                        <div class="mt-2 text-xs opacity-90">Excellent progress!</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 lg:ml-64">
+            <div class="p-6 max-w-7xl mx-auto">
+                <!-- Welcome Section -->
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">Good morning, John! 🌟</h2>
+                    <p class="text-gray-600">Here's your health summary for today</p>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- Steps -->
+                    <div class="health-metric rounded-2xl p-6 card-hover border border-gray-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-walking text-blue-600 text-lg"></i>
+                            </div>
+                            <span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">+12%</span>
+                        </div>
+                        <div class="text-2xl font-bold text-gray-900 mb-1">8,547</div>
+                        <div class="text-sm text-gray-600 mb-2">Steps today</div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full" style="width: 85%"></div>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">Goal: 10,000 steps</div>
+                    </div>
+
+                    <!-- Heart Rate -->
+                    <div class="health-metric rounded-2xl p-6 card-hover border border-gray-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-heartbeat text-red-600 text-lg pulse-animation"></i>
+                            </div>
+                            <span class="text-xs text-gray-500">Normal</span>
+                        </div>
+                        <div class="text-2xl font-bold text-gray-900 mb-1">72</div>
+                        <div class="text-sm text-gray-600 mb-2">BPM avg</div>
+                        <div class="text-xs text-gray-500">Resting: 68 BPM</div>
+                    </div>
+
+                    <!-- Calories -->
+                    <div class="health-metric rounded-2xl p-6 card-hover border border-gray-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-fire text-orange-600 text-lg"></i>
+                            </div>
+                            <span class="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full">-5%</span>
+                        </div>
+                        <div class="text-2xl font-bold text-gray-900 mb-1">1,847</div>
+                        <div class="text-sm text-gray-600 mb-2">Calories consumed</div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-orange-500 h-2 rounded-full" style="width: 75%"></div>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">Goal: 2,200 calories</div>
+                    </div>
+
+                    <!-- Sleep -->
+                    <div class="health-metric rounded-2xl p-6 card-hover border border-gray-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-moon text-purple-600 text-lg"></i>
+                            </div>
+                            <span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">Good</span>
+                        </div>
+                        <div class="text-2xl font-bold text-gray-900 mb-1">7h 23m</div>
+                        <div class="text-sm text-gray-600 mb-2">Sleep duration</div>
+                        <div class="text-xs text-gray-500">Deep: 2h 15m | REM: 1h 45m</div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Weight Trend -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-semibold text-gray-900">Weight Trend</h3>
+                            <select class="text-sm border border-gray-300 rounded-lg px-3 py-1">
+                                <option>Last 30 days</option>
+                                <option>Last 90 days</option>
+                                <option>Last year</option>
+                            </select>
+                        </div>
+                        <canvas id="weightChart" height="200"></canvas>
+                    </div>
+
+                    <!-- Activity Overview -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-semibold text-gray-900">Weekly Activity</h3>
+                            <div class="flex space-x-2">
+                                <button class="text-sm bg-blue-100 text-blue-600 px-3 py-1 rounded-lg">Steps</button>
+                                <button class="text-sm text-gray-600 px-3 py-1 rounded-lg hover:bg-gray-100">Calories</button>
+                            </div>
+                        </div>
+                        <canvas id="activityChart" height="20"></canvas>
+                    </div>
+                </div>
+
+                <!-- Health Insights & AI Assistant -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <!-- AI Insights -->
+                    <div class="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <div class="flex items-center mb-6">
+                            <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mr-3">
+                                <i class="fas fa-brain text-white"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-900">AI Health Insights</h3>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div class="ai-chat-bubble bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border-l-4 border-blue-500">
+                                <div class="flex items-start">
+                                    <i class="fas fa-lightbulb text-blue-600 mt-1 mr-3"></i>
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 mb-1">Sleep Quality Improvement</h4>
+                                        <p class="text-sm text-gray-700">Your sleep duration has improved by 15% this week. Consider maintaining your current bedtime routine for optimal results.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="ai-chat-bubble bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border-l-4 border-green-500">
+                                <div class="flex items-start">
+                                    <i class="fas fa-chart-line text-green-600 mt-1 mr-3"></i>
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 mb-1">Activity Goal Achievement</h4>
+                                        <p class="text-sm text-gray-700">You're consistently hitting 85% of your daily step goal. Try adding a 10-minute walk after lunch to reach 100%.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="ai-chat-bubble bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-4 border-l-4 border-orange-500">
+                                <div class="flex items-start">
+                                    <i class="fas fa-exclamation-triangle text-orange-600 mt-1 mr-3"></i>
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 mb-1">Hydration Reminder</h4>
+                                        <p class="text-sm text-gray-700">You're 20% below your daily water intake goal. Set reminders every 2 hours to stay hydrated.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h3>
+                        
+                        <div class="space-y-3">
+                            <button class="w-full flex items-center p-3 text-left hover:bg-gray-50 rounded-xl transition-colors">
+                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-plus text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-900">Log Vital Signs</div>
+                                    <div class="text-xs text-gray-500">Blood pressure, weight, etc.</div>
+                                </div>
+                            </button>
+                            
+                            <button class="w-full flex items-center p-3 text-left hover:bg-gray-50 rounded-xl transition-colors">
+                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-utensils text-green-600"></i>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-900">Add Meal</div>
+                                    <div class="text-xs text-gray-500">Track your nutrition</div>
+                                </div>
+                            </button>
+                            
+                            <button class="w-full flex items-center p-3 text-left hover:bg-gray-50 rounded-xl transition-colors">
+                                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-dumbbell text-purple-600"></i>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-900">Log Workout</div>
+                                    <div class="text-xs text-gray-500">Record your exercise</div>
+                                </div>
+                            </button>
+                            
+                            <button class="w-full flex items-center p-3 text-left hover:bg-gray-50 rounded-xl transition-colors">
+                                <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-pills text-yellow-600"></i>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-900">Take Medication</div>
+                                    <div class="text-xs text-gray-500">Mark as taken</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity & Medications -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Recent Activity -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-6">Recent Activity</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center p-3 bg-gray-50 rounded-xl">
+                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-running text-blue-600"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-900">Morning Run</div>
+                                    <div class="text-sm text-gray-500">5.2 km • 32 minutes • 387 calories</div>
+                                </div>
+                                <div class="text-xs text-gray-400">2h ago</div>
+                            </div>
+                            
+                            <div class="flex items-center p-3 bg-gray-50 rounded-xl">
+                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-apple-alt text-green-600"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-900">Healthy Breakfast</div>
+                                    <div class="text-sm text-gray-500">Oatmeal, berries, almonds • 425 calories</div>
+                                </div>
+                                <div class="text-xs text-gray-400">3h ago</div>
+                            </div>
+                            
+                            <div class="flex items-center p-3 bg-gray-50 rounded-xl">
+                                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-heartbeat text-purple-600"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-900">Blood Pressure</div>
+                                    <div class="text-sm text-gray-500">120/80 mmHg • Normal</div>
+                                </div>
+                                <div class="text-xs text-gray-400">4h ago</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Medications & Reminders -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-6">Today's Medications</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center p-3 bg-green-50 rounded-xl border border-green-200">
+                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-check text-green-600"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-900">Vitamin D</div>
+                                    <div class="text-sm text-gray-500">1000 IU • Morning</div>
+                                </div>
+                                <div class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">Taken</div>
+                            </div>
+                            
+                            <div class="flex items-center p-3 bg-yellow-50 rounded-xl border border-yellow-200">
+                                <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-clock text-yellow-600"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-900">Omega-3</div>
+                                    <div class="text-sm text-gray-500">1200 mg • Evening</div>
+                                </div>
+                                <div class="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">Pending</div>
+                            </div>
+                            
+                            <div class="flex items-center p-3 bg-blue-50 rounded-xl border border-blue-200">
+                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-tint text-blue-600"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-900">Hydration Goal</div>
+                                    <div class="text-sm text-gray-500">6/8 glasses completed</div>
+                                </div>
+                                <div class="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">75%</div>
+                            </div>
+                        </div>
+                        
+                        <button class="w-full mt-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-xl font-medium hover:shadow-lg transition-shadow">
+                            Set New Reminder
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- AI Chat Widget -->
+    <div id="aiChatWidget" class="fixed bottom-6 right-6 z-50">
+        <button id="chatToggle" class="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shadow-2xl hover:shadow-3xl transition-shadow flex items-center justify-center">
+            <i class="fas fa-robot text-xl"></i>
+        </button>
+    </div>
+
+    <!-- AI Chat Panel -->
+    <div id="chatPanel" class="fixed bottom-24 right-6 w-96 h-96 bg-white rounded-2xl shadow-2xl border border-gray-200 z-40 transform translate-y-full opacity-0 transition-all duration-300">
+        <div class="flex items-center p-4 border-b border-gray-200 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-t-2xl">
+            <i class="fas fa-robot mr-2"></i>
+            <h4 class="font-medium">AI Health Assistant</h4>
+            <button id="chatClose" class="ml-auto text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="flex flex-col h-80">
+            <div class="flex-1 p-4 overflow-y-auto" id="chatMessages">
+                <div class="ai-chat-bubble bg-gray-100 rounded-lg p-3 mb-3">
+                    <p class="text-sm">Hello! I'm your AI health assistant. How can I help you today?</p>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t border-gray-200">
+                <div class="flex">
+                    <input type="text" id="chatInput" placeholder="Ask about your health..." class="flex-1 border border-gray-300 rounded-l-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <button id="chatSend" class="bg-purple-500 text-white px-4 py-2 rounded-r-lg hover:bg-purple-600">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay for mobile sidebar -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden"></div>
+
+    <script>
+        // Mobile sidebar toggle
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
+            sidebarOverlay.classList.toggle('hidden');
+        });
+        
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.add('-translate-x-full');
+            sidebarOverlay.classList.add('hidden');
+        });
+
+        // Navigation active state
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.nav-item').forEach(nav => {
+                    nav.classList.remove('active', 'text-blue-600', 'bg-blue-50');
+                    nav.classList.add('text-gray-700');
+                });
+                item.classList.add('active', 'text-blue-600', 'bg-blue-50');
+                item.classList.remove('text-gray-700');
+            });
+        });
+
+        // AI Chat functionality
+        const chatToggle = document.getElementById('chatToggle');
+        const chatPanel = document.getElementById('chatPanel');
+        const chatClose = document.getElementById('chatClose');
+        const chatInput = document.getElementById('chatInput');
+        const chatSend = document.getElementById('chatSend');
+        const chatMessages = document.getElementById('chatMessages');
+
+        chatToggle.addEventListener('click', () => {
+            chatPanel.classList.remove('translate-y-full', 'opacity-0');
+            chatPanel.classList.add('translate-y-0', 'opacity-100');
+        });
+
+        chatClose.addEventListener('click', () => {
+            chatPanel.classList.add('translate-y-full', 'opacity-0');
+            chatPanel.classList.remove('translate-y-0', 'opacity-100');
+        });
+
+        function addMessage(message, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `ai-chat-bubble mb-3 ${isUser ? 'ml-8' : 'mr-8'}`;
+            messageDiv.innerHTML = `
+                <div class="${isUser ? 'bg-blue-500 text-white' : 'bg-gray-100'} rounded-lg p-3">
+                    <p class="text-sm">${message}</p>
+                </div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function getAIResponse(userMessage) {
+            const responses = {
+                'calories': "You've consumed 1,847 calories today, which is 75% of your daily goal of 2,200 calories. You have room for a healthy dinner!",
+                'steps': "Great job! You've taken 8,547 steps today, which is 85% of your 10,000 step goal. A short evening walk would help you reach it!",
+                'sleep': "Your sleep last night was 7h 23m with good quality. You had 2h 15m of deep sleep and 1h 45m of REM sleep. Try to maintain this schedule!",
+                'weight': "Your weight trend shows a steady 2.3 lb decrease over the past month. You're on track to meet your weight loss goal!",
+                'heart': "Your average heart rate today is 72 BPM, which is normal. Your resting heart rate of 68 BPM indicates good cardiovascular health.",
+                'water': "You've had 6 out of 8 glasses of water today. Remember to stay hydrated - try setting hourly reminders!",
+                'medication': "You've taken your Vitamin D this morning. Don't forget your evening Omega-3 supplement at 7 PM.",
+                'mood': "Your mood tracking shows improvement this week. Consider continuing your meditation routine for sustained mental wellness."
+            };
+
+            const lowerMessage = userMessage.toLowerCase();
+            for (const [key, response] of Object.entries(responses)) {
+                if (lowerMessage.includes(key)) {
+                    return response;
+                }
+            }
+            
+            return "I'm here to help with your health questions! You can ask me about your calories, steps, sleep, weight, heart rate, hydration, medications, or mood tracking.";
+        }
+
+        chatSend.addEventListener('click', () => {
+            const message = chatInput.value.trim();
+            if (message) {
+                addMessage(message, true);
+                chatInput.value = '';
+                
+                setTimeout(() => {
+                    const response = getAIResponse(message);
+                    addMessage(response);
+                }, 1000);
+            }
+        });
+
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                chatSend.click();
+            }
+        });
+
+        // Initialize charts
+        document.addEventListener('DOMContentLoaded', function() {
+            // Weight Chart
+            const weightCtx = document.getElementById('weightChart').getContext('2d');
+            new Chart(weightCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan 1', 'Jan 8', 'Jan 15', 'Jan 22', 'Jan 29', 'Feb 5', 'Feb 12'],
+                    datasets: [{
+                        label: 'Weight (lbs)',
+                        data: [175, 174.2, 173.8, 173.1, 172.5, 171.9, 171.3],
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Activity Chart
+            const activityCtx = document.getElementById('activityChart').getContext('2d');
+            new Chart(activityCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Steps',
+                        data: [1, 2, 3, 4, 5, 6, 7],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(34, 197, 94, 0.8)',
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(34, 197, 94, 0.8)',
+                            'rgba(59, 130, 246, 0.8)'
+                        ],
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        });
+
+        // Quick action handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            const quickActionButtons = document.querySelectorAll('button[class*="w-full flex items-center p-3"]');
+            
+            quickActionButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const actionText = this.querySelector('.font-medium').textContent;
+                    showNotification(`${actionText} feature opened!`, 'info');
+                });
+            });
+        });
+
+        // Notification system
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-20 right-6 z-50 max-w-sm bg-white border border-gray-200 rounded-lg shadow-lg p-4 transform translate-x-full transition-transform duration-300`;
+            
+            const bgColor = {
+                'info': 'bg-blue-50 border-blue-200',
+                'success': 'bg-green-50 border-green-200',
+                'warning': 'bg-yellow-50 border-yellow-200',
+                'error': 'bg-red-50 border-red-200'
+            };
+            
+            const iconColor = {
+                'info': 'text-blue-600',
+                'success': 'text-green-600',
+                'warning': 'text-yellow-600',
+                'error': 'text-red-600'
+            };
+            
+            const icons = {
+                'info': 'fa-info-circle',
+                'success': 'fa-check-circle',
+                'warning': 'fa-exclamation-triangle',
+                'error': 'fa-times-circle'
+            };
+
+            notification.className += ` ${bgColor[type]}`;
+            
+            notification.innerHTML = `
+                <div class="flex items-start">
+                    <i class="fas ${icons[type]} ${iconColor[type]} mt-0.5 mr-3"></i>
+                    <div class="flex-1">
+                        <p class="text-sm text-gray-900">${message}</p>
+                    </div>
+                    <button class="ml-2 text-gray-400 hover:text-gray-600" onclick="this.parentElement.parentElement.remove()">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // Health tips rotation
+        const healthTips = [
+            "💧 Drink a glass of water every hour to stay hydrated",
+            "🚶‍♂️ Take a 5-minute walk break every hour",
+            "🥗 Include colorful vegetables in every meal",
+            "😴 Maintain a consistent sleep schedule",
+            "🧘‍♀️ Practice 5 minutes of deep breathing daily",
+            "🍎 Choose whole foods over processed snacks",
+            "📱 Take regular breaks from screen time",
+            "🤝 Stay connected with friends and family"
+        ];
+
+        let tipIndex = 0;
+        function rotateTips() {
+            // This could be implemented to show rotating tips in a dedicated area
+            console.log(healthTips[tipIndex]);
+            tipIndex = (tipIndex + 1) % healthTips.length;
+        }
+
+        // Initialize tip rotation every 30 seconds
+        setInterval(rotateTips, 30000);
+
+        // Mock data updates for demo
+        function updateHealthData() {
+            // Update step count randomly
+            const currentSteps = parseInt(document.querySelector('.text-2xl.font-bold').textContent.replace(',', ''));
+            const newSteps = currentSteps + Math.floor(Math.random() * 50);
+            document.querySelector('.text-2xl.font-bold').textContent = newSteps.toLocaleString();
+            
+            // Update progress bar
+            const progressPercent = Math.min((newSteps / 10000) * 100, 100);
+            document.querySelector('.bg-blue-500.h-2').style.width = progressPercent + '%';
+        }
+
+        // Update health data every 30 seconds for demo
+        setInterval(updateHealthData, 30000);
+
+        // Welcome message based on time
+        function updateWelcomeMessage() {
+            const now = new Date();
+            const hour = now.getHours();
+            let greeting;
+            let emoji;
+
+            if (hour < 12) {
+                greeting = "Good morning";
+                emoji = "🌅";
+            } else if (hour < 18) {
+                greeting = "Good afternoon";
+                emoji = "☀️";
+            } else {
+                greeting = "Good evening";
+                emoji = "🌙";
+            }
+
+            document.querySelector('h2.text-3xl').textContent = `${greeting}, John! ${emoji}`;
+        }
+
+        // Initialize welcome message
+        updateWelcomeMessage();
+
+        // Show initial notification
+        setTimeout(() => {
+            showNotification("Welcome to HealthTracker Pro! Your AI assistant is ready to help.", 'success');
+        }, 2000);
+    </script>
+</body>
+</html>
