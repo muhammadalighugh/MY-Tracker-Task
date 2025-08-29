@@ -10,7 +10,7 @@ export default function DashboardLayout() {
       <div className="flex min-h-screen bg-slate-50">
         <Sidebar /> {/* No activeTrackers prop needed */}
         <div className="flex-1">
-          <Header />
+          {/* <Header /> */}
           <Outlet />
         </div>
       </div>
